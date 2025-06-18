@@ -13,71 +13,44 @@ let appData = {
 // Configurações dos horários
 const HORARIOS_CONFIG = {
     matutino: {
-        dias: ['segunda', 'terca', 'quarta', 'quinta', 'sexta'],
+        dias: ["segunda", "terca", "quarta", "quinta", "sexta"],
         blocos: [
-            { id: 1, inicio: '07:30', fim: '08:20' },
-            { id: 2, inicio: '08:20', fim: '09:10' },
-            { id: 3, inicio: '09:10', fim: '10:00' },
-            { id: 4, inicio: '10:00', fim: '10:50' },
-            { id: 5, inicio: '10:50', fim: '11:40' },
-            { id: 6, inicio: '11:40', fim: '12:30' }
+            { id: 1, inicio: "07:30", fim: "08:20" },
+            { id: 2, inicio: "08:20", fim: "09:10" },
+            { id: 3, inicio: "09:10", fim: "10:00" },
+            { id: 4, inicio: "10:00", fim: "10:50" },
+            { id: 5, inicio: "10:50", fim: "11:40" },
+            { id: 6, inicio: "11:40", fim: "12:30" }
         ],
         semestres: Array.from({length: 9}, (_, i) => i + 1)
     },
     noturno: {
-        dias: ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'],
-               ],
-            'segunda': [
-                { id: 1, inicio: '18:40', fim: '19:30' },
-                { id: 2, inicio: '19:30', fim: '20:20' },
-                { id: 3, inicio: '20:20', fim: '21:10' },
-                { id: 4, inicio: '21:10', fim: '22:00' }
-            ],
-            'terca': [
-                { id: 1, inicio: '18:40', fim: '19:30' },
-                { id: 2, inicio: '19:30', fim: '20:20' },
-                { id: 3, inicio: '20:20', fim: '21:10' },
-                { id: 4, inicio: '21:10', fim: '22:00' }
-            ],
-            'quarta': [
-                { id: 1, inicio: '18:40', fim: '19:30' },
-                { id: 2, inicio: '19:30', fim: '20:20' },
-                { id: 3, inicio: '20:20', fim: '21:10' },
-                { id: 4, inicio: '21:10', fim: '22:00' }
-            ],
-            'quinta': [
-                { id: 1, inicio: '18:40', fim: '19:30' },
-                { id: 2, inicio: '19:30', fim: '20:20' },
-                { id: 3, inicio: '20:20', fim: '21:10' },
-                { id: 4, inicio: '21:10', fim: '22:00' }
-            ],
-            'sexta': [
-                { id: 1, inicio: '18:40', fim: '19:30' },
-                { id: 2, inicio: '19:30', fim: '20:20' },
-                { id: 3, inicio: '20:20', fim: '21:10' },
-                { id: 4, inicio: '21:10', fim: '22:00' }
-            ],
-            'sabado': [
-                { id: 1, inicio: '07:30', fim: '08:20' },
-                { id: 2, inicio: '08:20', fim: '09:10' },
-                { id: 3, inicio: '09:10', fim: '10:00' },
-                { id: 4, inicio: '10:00', fim: '10:50' },
-                { id: 5, inicio: '10:50', fim: '11:40' },
-                { id: 6, inicio: '11:40', fim: '12:30' }
-            ]
-        },
+        dias: ["segunda", "terca", "quarta", "quinta", "sexta", "sabado"],
+        blocos: [
+            { id: 1, inicio: "18:40", fim: "19:30" },
+            { id: 2, inicio: "19:30", fim: "20:20" },
+            { id: 3, inicio: "20:20", fim: "21:10" },
+            { id: 4, inicio: "21:10", fim: "22:00" },
+            // Horários de sábado para o noturno (mesmos do matutino)
+            { id: 5, inicio: "07:30", fim: "08:20" },
+            { id: 6, inicio: "08:20", fim: "09:10" },
+            { id: 7, inicio: "09:10", fim: "10:00" },
+            { id: 8, inicio: "10:00", fim: "10:50" },
+            { id: 9, inicio: "10:50", fim: "11:40" },
+            { id: 10, inicio: "11:40", fim: "12:30" }
+        ],
         semestres: Array.from({length: 10}, (_, i) => i + 1)
     }
 };
 
 const CODIGOS_TURMA = {
     matutino: {
-        regular: ['T02'],
-        extra: ['T04', 'T06']
+        regular: ["T02"],
+        extra: ["T04", "T06"]
     },
     noturno: {
-        regular: ['T01'],
-        extra: ['T03', 'T05']
+        regular: ["T01"],
+        extra: ["T03", "T05"]
     }
 };
 
@@ -317,7 +290,7 @@ function initDisciplinas() {
         
         // Check if codigo already exists for the same turno
         if (appData.disciplinas.some(d => d.codigo === codigo && d.turno === turno)) {
-            showAlert('Código da disciplina já existe', 'error');
+            showAlert('Código da disciplina já existe para este turno', 'error');
             return;
         }
         
@@ -573,7 +546,7 @@ function renderSalasList(searchTerm = '') {
             <div class="item-info">
                 <h4>${sala.nome}</h4>
                 <p>Capacidade: ${sala.capacidade || 'Não informada'}</p>
-                <p>Recursos: ${sala.recursos.length > 0 ? sala.recursos.join(', ') : 'Nenhum'}</p>
+                <p>Recursos: ${sala.recursos.join(', ') || 'Nenhum'}</p>
             </div>
             <div class="item-actions">
                 <button class="btn btn-danger btn-small" onclick="deleteSala('${sala.id}')">
@@ -594,50 +567,501 @@ function deleteSala(id) {
     }
 }
 
-// Update select options across the app
+// Horários - Funcionalidades
+function initHorarios() {
+    const form = document.getElementById('horario-form');
+    const turnoSelect = document.getElementById('horario-turno');
+    const semestreSelect = document.getElementById('horario-semestre');
+    const turmaSelect = document.getElementById('horario-turma');
+    const disciplinaSelect = document.getElementById('horario-disciplina');
+    const professorSelect = document.getElementById('horario-professor');
+    const salaSelect = document.getElementById('horario-sala');
+    const diaSemanaSelect = document.getElementById('horario-dia-semana');
+    const blocoHorarioSelect = document.getElementById('horario-bloco-horario');
+
+    // Update semestre options based on turno
+    turnoSelect.addEventListener('change', () => {
+        const turno = turnoSelect.value;
+        semestreSelect.innerHTML = '<option value="">Selecione o semestre</option>';
+        turmaSelect.innerHTML = '<option value="">Selecione a turma</option>';
+        disciplinaSelect.innerHTML = '<option value="">Selecione a disciplina</option>';
+        professorSelect.innerHTML = '<option value="">Selecione o professor</option>';
+        salaSelect.innerHTML = '<option value="">Selecione a sala</option>';
+        diaSemanaSelect.innerHTML = '<option value="">Selecione o dia da semana</option>';
+        blocoHorarioSelect.innerHTML = '<option value="">Selecione o bloco de horário</option>';
+
+        if (turno) {
+            HORARIOS_CONFIG[turno].semestres.forEach(sem => {
+                const option = document.createElement('option');
+                option.value = sem;
+                option.textContent = `${sem}º Semestre`;
+                semestreSelect.appendChild(option);
+            });
+            // Populate dias da semana
+            HORARIOS_CONFIG[turno].dias.forEach(dia => {
+                const option = document.createElement('option');
+                option.value = dia;
+                option.textContent = dia.charAt(0).toUpperCase() + dia.slice(1);
+                diaSemanaSelect.appendChild(option);
+            });
+        }
+        updateTurmaOptions();
+        updateDisciplinaOptions();
+        updateProfessorOptions();
+        updateSalaOptions();
+    });
+
+    // Update turma options based on turno and semestre
+    semestreSelect.addEventListener('change', updateTurmaOptions);
+    function updateTurmaOptions() {
+        const turno = turnoSelect.value;
+        const semestre = parseInt(semestreSelect.value);
+        turmaSelect.innerHTML = '<option value="">Selecione a turma</option>';
+        if (turno && semestre) {
+            appData.turmas.filter(t => t.turno === turno && t.semestreCurricular === semestre).forEach(turma => {
+                const option = document.createElement('option');
+                option.value = turma.id;
+                option.textContent = turma.nome;
+                turmaSelect.appendChild(option);
+            });
+        }
+    }
+
+    // Update disciplina options based on turno and semestre
+    semestreSelect.addEventListener('change', updateDisciplinaOptions);
+    function updateDisciplinaOptions() {
+        const turno = turnoSelect.value;
+        const semestre = parseInt(semestreSelect.value);
+        disciplinaSelect.innerHTML = '<option value="">Selecione a disciplina</option>';
+        if (turno && semestre) {
+            appData.disciplinas.filter(d => d.turno === turno && d.semestre === semestre).forEach(disciplina => {
+                const option = document.createElement('option');
+                option.value = disciplina.id;
+                option.textContent = disciplina.nome;
+                disciplinaSelect.appendChild(option);
+            });
+        }
+    }
+
+    // Update professor options
+    function updateProfessorOptions() {
+        professorSelect.innerHTML = '<option value="">Selecione o professor</option>';
+        appData.professores.forEach(professor => {
+            const option = document.createElement('option');
+            option.value = professor.id;
+            option.textContent = professor.nome;
+            professorSelect.appendChild(option);
+        });
+    }
+
+    // Update sala options
+    function updateSalaOptions() {
+        salaSelect.innerHTML = '<option value="">Selecione a sala</option>';
+        appData.salas.forEach(sala => {
+            const option = document.createElement('option');
+            option.value = sala.id;
+            option.textContent = sala.nome;
+            salaSelect.appendChild(option);
+        });
+    }
+
+    // Update bloco de horário options based on turno and dia da semana
+    diaSemanaSelect.addEventListener('change', () => {
+        const turno = turnoSelect.value;
+        const diaSemana = diaSemanaSelect.value;
+        blocoHorarioSelect.innerHTML = '<option value="">Selecione o bloco de horário</option>';
+        if (turno && diaSemana) {
+            const blocos = HORARIOS_CONFIG[turno].blocos[diaSemana] || HORARIOS_CONFIG[turno].blocos;
+            blocos.forEach(bloco => {
+                const option = document.createElement('option');
+                option.value = bloco.id;
+                option.textContent = `${bloco.inicio} - ${bloco.fim}`;
+                blocoHorarioSelect.appendChild(option);
+            });
+        }
+    });
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const turno = turnoSelect.value;
+        const semestre = parseInt(semestreSelect.value);
+        const turmaId = turmaSelect.value;
+        const disciplinaId = disciplinaSelect.value;
+        const professorId = professorSelect.value;
+        const salaId = salaSelect.value;
+        const diaSemana = diaSemanaSelect.value;
+        const blocoId = parseInt(blocoHorarioSelect.value);
+
+        if (!turno || !semestre || !turmaId || !disciplinaId || !professorId || !salaId || !diaSemana || !blocoId) {
+            showAlert('Todos os campos são obrigatórios', 'error');
+            return;
+        }
+
+        const blocoHorario = (HORARIOS_CONFIG[turno].blocos[diaSemana] || HORARIOS_CONFIG[turno].blocos).find(b => b.id === blocoId);
+        const professor = appData.professores.find(p => p.id === professorId);
+        const sala = appData.salas.find(s => s.id === salaId);
+        const turma = appData.turmas.find(t => t.id === turmaId);
+        const disciplina = appData.disciplinas.find(d => d.id === disciplinaId);
+
+        // Validação de conflitos
+        const conflitoProfessor = appData.horarios.some(h =>
+            h.professorId === professorId &&
+            h.diaSemana === diaSemana &&
+            h.blocoId === blocoId
+        );
+
+        const conflitoSala = appData.horarios.some(h =>
+            h.salaId === salaId &&
+            h.diaSemana === diaSemana &&
+            h.blocoId === blocoId
+        );
+
+        if (conflitoProfessor) {
+            showAlert(`Conflito: Professor ${professor.nome} já está alocado neste horário.`, 'error');
+            return;
+        }
+
+        if (conflitoSala) {
+            showAlert(`Conflito: Sala ${sala.nome} já está ocupada neste horário.`, 'error');
+            return;
+        }
+
+        const horario = {
+            id: generateId(),
+            turno,
+            semestre,
+            turmaId,
+            disciplinaId,
+            professorId,
+            salaId,
+            diaSemana,
+            blocoId,
+            blocoInicio: blocoHorario.inicio,
+            blocoFim: blocoHorario.fim
+        };
+
+        appData.horarios.push(horario);
+        showAlert('Horário cadastrado com sucesso!', 'success');
+        clearForm('horario-form');
+        renderHorariosTable();
+        saveData();
+    });
+
+    // Search functionality
+    const searchInput = document.getElementById('search-horarios');
+    searchInput.addEventListener('input', () => {
+        renderHorariosTable(searchInput.value);
+    });
+}
+
+function renderHorariosTable(searchTerm = '') {
+    const container = document.getElementById('horarios-table-container');
+    let tableHTML = '<table><thead><tr><th>Turno</th><th>Semestre</th><th>Turma</th><th>Disciplina</th><th>Professor</th><th>Sala</th><th>Dia</th><th>Horário</th><th>Ações</th></tr></thead><tbody>';
+
+    const filteredHorarios = appData.horarios.filter(horario => {
+        const turma = appData.turmas.find(t => t.id === horario.turmaId);
+        const disciplina = appData.disciplinas.find(d => d.id === horario.disciplinaId);
+        const professor = appData.professores.find(p => p.id === horario.professorId);
+        const sala = appData.salas.find(s => s.id === horario.salaId);
+
+        const searchString = `${horario.turno} ${horario.semestre} ${turma ? turma.nome : ''} ${disciplina ? disciplina.nome : ''} ${professor ? professor.nome : ''} ${sala ? sala.nome : ''} ${horario.diaSemana} ${horario.blocoInicio}-${horario.blocoFim}`.toLowerCase();
+        return searchString.includes(searchTerm.toLowerCase());
+    });
+
+    if (filteredHorarios.length === 0) {
+        container.innerHTML = '<p class="no-activity">Nenhum horário cadastrado</p>';
+        return;
+    }
+
+    filteredHorarios.forEach(horario => {
+        const turma = appData.turmas.find(t => t.id === horario.turmaId);
+        const disciplina = appData.disciplinas.find(d => d.id === horario.disciplinaId);
+        const professor = appData.professores.find(p => p.id === horario.professorId);
+        const sala = appData.salas.find(s => s.id === horario.salaId);
+
+        tableHTML += `
+            <tr>
+                <td>${horario.turno}</td>
+                <td>${horario.semestre}º</td>
+                <td>${turma ? turma.nome : 'N/A'}</td>
+                <td>${disciplina ? disciplina.nome : 'N/A'}</td>
+                <td>${professor ? professor.nome : 'N/A'}</td>
+                <td>${sala ? sala.nome : 'N/A'}</td>
+                <td>${horario.diaSemana.charAt(0).toUpperCase() + horario.diaSemana.slice(1)}</td>
+                <td>${horario.blocoInicio} - ${horario.blocoFim}</td>
+                <td>
+                    <button class="btn btn-danger btn-small" onclick="deleteHorario('${horario.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+
+    tableHTML += '</tbody></table>';
+    container.innerHTML = tableHTML;
+}
+
+function deleteHorario(id) {
+    if (confirm('Tem certeza que deseja excluir este horário?')) {
+        appData.horarios = appData.horarios.filter(h => h.id !== id);
+        renderHorariosTable();
+        showAlert('Horário excluído com sucesso!', 'success');
+        saveData();
+    }
+}
+
+// Impressão - Funcionalidades
+function initImpressao() {
+    const printSemestreBtn = document.getElementById('print-semestre-btn');
+    const printProfessorBtn = document.getElementById('print-professor-btn');
+    const printSemestreSelect = document.getElementById('print-semestre-select');
+    const printTurnoSelect = document.getElementById('print-turno-select');
+    const printProfessorSelect = document.getElementById('print-professor-select');
+
+    // Populate turno and semestre options for printing
+    ['matutino', 'noturno'].forEach(turno => {
+        const option = document.createElement('option');
+        option.value = turno;
+        option.textContent = turno.charAt(0).toUpperCase() + turno.slice(1);
+        printTurnoSelect.appendChild(option);
+    });
+
+    printTurnoSelect.addEventListener('change', () => {
+        const turno = printTurnoSelect.value;
+        printSemestreSelect.innerHTML = '<option value="">Selecione o semestre</option>';
+        if (turno) {
+            HORARIOS_CONFIG[turno].semestres.forEach(sem => {
+                const option = document.createElement('option');
+                option.value = sem;
+                option.textContent = `${sem}º Semestre`;
+                printSemestreSelect.appendChild(option);
+            });
+        }
+    });
+
+    // Populate professor options for printing
+    appData.professores.forEach(professor => {
+        const option = document.createElement('option');
+        option.value = professor.id;
+        option.textContent = professor.nome;
+        printProfessorSelect.appendChild(option);
+    });
+
+    printSemestreBtn.addEventListener('click', () => {
+        const turno = printTurnoSelect.value;
+        const semestre = parseInt(printSemestreSelect.value);
+        if (!turno || !semestre) {
+            showAlert('Selecione o turno e o semestre para imprimir', 'error');
+            return;
+        }
+        printHorariosBySemestre(turno, semestre);
+    });
+
+    printProfessorBtn.addEventListener('click', () => {
+        const professorId = printProfessorSelect.value;
+        if (!professorId) {
+            showAlert('Selecione o professor para imprimir', 'error');
+            return;
+        }
+        printHorariosByProfessor(professorId);
+    });
+}
+
+function printHorariosBySemestre(turno, semestre) {
+    const horariosFiltrados = appData.horarios.filter(h => h.turno === turno && h.semestre === semestre);
+    if (horariosFiltrados.length === 0) {
+        showAlert('Nenhum horário encontrado para este semestre e turno.', 'info');
+        return;
+    }
+
+    let printContent = `<h1>Quadro de Horários - ${turno.charAt(0).toUpperCase() + turno.slice(1)} - ${semestre}º Semestre</h1>`;
+    printContent += '<table><thead><tr><th>Dia</th><th>Horário</th><th>Disciplina</th><th>Professor</th><th>Sala</th><th>Turma</th></tr></thead><tbody>';
+
+    const diasOrdenados = HORARIOS_CONFIG[turno].dias;
+    const blocosOrdenados = HORARIOS_CONFIG[turno].blocos;
+
+    diasOrdenados.forEach(dia => {
+        blocosOrdenados.forEach(bloco => {
+            const horario = horariosFiltrados.find(h => h.diaSemana === dia && h.blocoId === bloco.id);
+            if (horario) {
+                const disciplina = appData.disciplinas.find(d => d.id === horario.disciplinaId);
+                const professor = appData.professores.find(p => p.id === horario.professorId);
+                const sala = appData.salas.find(s => s.id === horario.salaId);
+                const turma = appData.turmas.find(t => t.id === horario.turmaId);
+
+                printContent += `
+                    <tr>
+                        <td>${dia.charAt(0).toUpperCase() + dia.slice(1)}</td>
+                        <td>${bloco.inicio} - ${bloco.fim}</td>
+                        <td>${disciplina ? disciplina.nome : 'N/A'}</td>
+                        <td>${professor ? professor.nome : 'N/A'}</td>
+                        <td>${sala ? sala.nome : 'N/A'}</td>
+                        <td>${turma ? turma.nome : 'N/A'}</td>
+                    </tr>
+                `;
+            }
+        });
+    });
+
+    printContent += '</tbody></table>';
+    printWindow(printContent, `Horarios_${turno}_${semestre}Semestre`);
+}
+
+function printHorariosByProfessor(professorId) {
+    const horariosFiltrados = appData.horarios.filter(h => h.professorId === professorId);
+    const professor = appData.professores.find(p => p.id === professorId);
+
+    if (!professor) {
+        showAlert('Professor não encontrado.', 'error');
+        return;
+    }
+
+    if (horariosFiltrados.length === 0) {
+        showAlert(`Nenhum horário encontrado para o professor ${professor.nome}.`, 'info');
+        return;
+    }
+
+    let printContent = `<h1>Quadro de Horários - Professor: ${professor.nome}</h1>`;
+    printContent += '<table><thead><tr><th>Turno</th><th>Semestre</th><th>Dia</th><th>Horário</th><th>Disciplina</th><th>Sala</th><th>Turma</th></tr></thead><tbody>';
+
+    // Sort by turno, then diaSemana, then blocoInicio
+    horariosFiltrados.sort((a, b) => {
+        const turnoOrder = { 'matutino': 1, 'noturno': 2 };
+        const diaOrder = { 'segunda': 1, 'terca': 2, 'quarta': 3, 'quinta': 4, 'sexta': 5, 'sabado': 6 };
+
+        if (turnoOrder[a.turno] !== turnoOrder[b.turno]) {
+            return turnoOrder[a.turno] - turnoOrder[b.turno];
+        }
+        if (diaOrder[a.diaSemana] !== diaOrder[b.diaSemana]) {
+            return diaOrder[a.diaSemana] - diaOrder[b.diaSemana];
+        }
+        // Compare times if they are strings like 'HH:MM'
+        const timeA = parseInt(a.blocoInicio.replace(':', ''));
+        const timeB = parseInt(b.blocoInicio.replace(':', ''));
+        return timeA - timeB;
+    });
+
+    horariosFiltrados.forEach(horario => {
+        const disciplina = appData.disciplinas.find(d => d.id === horario.disciplinaId);
+        const sala = appData.salas.find(s => s.id === horario.salaId);
+        const turma = appData.turmas.find(t => t.id === horario.turmaId);
+
+        printContent += `
+            <tr>
+                <td>${horario.turno.charAt(0).toUpperCase() + horario.turno.slice(1)}</td>
+                <td>${horario.semestre}º</td>
+                <td>${horario.diaSemana.charAt(0).toUpperCase() + horario.diaSemana.slice(1)}</td>
+                <td>${horario.blocoInicio} - ${horario.blocoFim}</td>
+                <td>${disciplina ? disciplina.nome : 'N/A'}</td>
+                <td>${sala ? sala.nome : 'N/A'}</td>
+                <td>${turma ? turma.nome : 'N/A'}</td>
+            </tr>
+        `;
+    });
+
+    printContent += '</tbody></table>';
+    printWindow(printContent, `Horarios_Professor_${professor.nome}`);
+}
+
+function printWindow(content, title) {
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>${title}</title>
+            <link rel="stylesheet" href="styles.css">
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                h1 { text-align: center; margin-bottom: 20px; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+                th { background-color: #f2f2f2; }
+                @media print {
+                    .no-print { display: none; }
+                }
+            </style>
+        </head>
+        <body>
+            ${content}
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+}
+
+// Persistência de dados
+function saveData() {
+    localStorage.setItem('appDataHorariosUESC', JSON.stringify(appData));
+    console.log('Dados salvos:', appData);
+}
+
+function loadData() {
+    const savedData = localStorage.getItem('appDataHorariosUESC');
+    if (savedData) {
+        appData = JSON.parse(savedData);
+        console.log('Dados carregados:', appData);
+    }
+}
+
+// Update all select options
 function updateSelectOptions() {
-    // Update professor disciplinas select
+    // Disciplinas for professor form
     const professorDisciplinasSelect = document.getElementById('professor-disciplinas');
     professorDisciplinasSelect.innerHTML = '';
     appData.disciplinas.forEach(disciplina => {
         const option = document.createElement('option');
         option.value = disciplina.id;
-        option.textContent = `${disciplina.nome} (${disciplina.codigo})`;
+        option.textContent = disciplina.nome;
         professorDisciplinasSelect.appendChild(option);
     });
-    
-    // Update horario selects
-    updateHorarioSelects();
-    
-    // Update print selects
-    updatePrintSelects();
-}
 
-function updateHorarioSelects() {
-    const turmaSelect = document.getElementById('horario-turma');
-    turmaSelect.innerHTML = '<option value="">Selecione uma turma</option>';
+    // Professores for horario form
+    const horarioProfessorSelect = document.getElementById('horario-professor');
+    horarioProfessorSelect.innerHTML = '<option value="">Selecione o professor</option>';
+    appData.professores.forEach(professor => {
+        const option = document.createElement('option');
+        option.value = professor.id;
+        option.textContent = professor.nome;
+        horarioProfessorSelect.appendChild(option);
+    });
+
+    // Salas for horario form
+    const horarioSalaSelect = document.getElementById('horario-sala');
+    horarioSalaSelect.innerHTML = '<option value="">Selecione a sala</option>';
+    appData.salas.forEach(sala => {
+        const option = document.createElement('option');
+        option.value = sala.id;
+        option.textContent = sala.nome;
+        horarioSalaSelect.appendChild(option);
+    });
+
+    // Turmas for horario form
+    const horarioTurmaSelect = document.getElementById('horario-turma');
+    horarioTurmaSelect.innerHTML = '<option value="">Selecione a turma</option>';
     appData.turmas.forEach(turma => {
         const option = document.createElement('option');
         option.value = turma.id;
         option.textContent = turma.nome;
-        turmaSelect.appendChild(option);
+        horarioTurmaSelect.appendChild(option);
     });
-}
 
-function updatePrintSelects() {
-    // Update print turma select
-    const printTurmaSelect = document.getElementById('print-turma');
-    printTurmaSelect.innerHTML = '<option value="">Selecione uma turma</option>';
-    appData.turmas.forEach(turma => {
+    // Disciplinas for horario form
+    const horarioDisciplinaSelect = document.getElementById('horario-disciplina');
+    horarioDisciplinaSelect.innerHTML = '<option value="">Selecione a disciplina</option>';
+    appData.disciplinas.forEach(disciplina => {
         const option = document.createElement('option');
-        option.value = turma.id;
-        option.textContent = turma.nome;
-        printTurmaSelect.appendChild(option);
+        option.value = disciplina.id;
+        option.textContent = disciplina.nome;
+        horarioDisciplinaSelect.appendChild(option);
     });
-    
-    // Update print professor select
-    const printProfessorSelect = document.getElementById('print-professor');
-    printProfessorSelect.innerHTML = '<option value="">Selecione um professor</option>';
+
+    // Professores for print form
+    const printProfessorSelect = document.getElementById('print-professor-select');
+    printProfessorSelect.innerHTML = '<option value="">Selecione o professor</option>';
     appData.professores.forEach(professor => {
         const option = document.createElement('option');
         option.value = professor.id;
@@ -646,746 +1070,22 @@ function updatePrintSelects() {
     });
 }
 
-// Data persistence
-function saveData() {
-    try {
-        localStorage.setItem('gestao-horarios-data', JSON.stringify(appData));
-    } catch (error) {
-        console.error('Erro ao salvar dados:', error);
-        showAlert('Erro ao salvar dados', 'error');
-    }
-}
-
-function loadData() {
-    try {
-        const savedData = localStorage.getItem('gestao-horarios-data');
-        if (savedData) {
-            appData = JSON.parse(savedData);
-            
-            // Render all lists
-            renderProfessoresList();
-            renderDisciplinasList();
-            renderTurmasList();
-            renderSalasList();
-            
-            // Update selects
-            updateSelectOptions();
-            
-            // Update dashboard
-            updateDashboardCounts();
-        }
-    } catch (error) {
-        console.error('Erro ao carregar dados:', error);
-        showAlert('Erro ao carregar dados salvos', 'error');
-    }
-}
-
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
+    loadData();
     initNavigation();
     initTabs();
+    updateDashboardCounts();
     initProfessores();
     initDisciplinas();
     initTurmas();
     initSalas();
     initHorarios();
     initImpressao();
-    
-    // Load saved data
-    loadData();
-    
-    console.log('Sistema de Gestão de Horários inicializado com sucesso!');
+    updateSelectOptions(); // Initial population of all selects
+
+    // Set default active section to dashboard
+    document.getElementById('dashboard-btn').click();
 });
 
-
-// Horários - Funcionalidades avançadas
-function initHorarios() {
-    const turmaSelect = document.getElementById('horario-turma');
-    const novoHorarioBtn = document.getElementById('btn-novo-horario');
-    const limparHorariosBtn = document.getElementById('btn-limpar-horarios');
-    const modal = document.getElementById('horario-modal');
-    const modalForm = document.getElementById('horario-form');
-    
-    let currentSlot = null; // Slot atual sendo editado
-    
-    // Event listeners
-    turmaSelect.addEventListener('change', () => {
-        if (turmaSelect.value) {
-            renderHorariosGrid(turmaSelect.value);
-        } else {
-            document.getElementById('horarios-grid').innerHTML = '<p class="no-activity">Selecione uma turma para visualizar os horários</p>';
-        }
-    });
-    
-    novoHorarioBtn.addEventListener('click', () => {
-        if (!turmaSelect.value) {
-            showAlert('Selecione uma turma primeiro', 'warning');
-            return;
-        }
-        openHorarioModal();
-    });
-    
-    limparHorariosBtn.addEventListener('click', () => {
-        if (!turmaSelect.value) {
-            showAlert('Selecione uma turma primeiro', 'warning');
-            return;
-        }
-        
-        if (confirm('Tem certeza que deseja limpar todos os horários desta turma?')) {
-            appData.horarios = appData.horarios.filter(h => h.idTurma !== turmaSelect.value);
-            renderHorariosGrid(turmaSelect.value);
-            showAlert('Horários limpos com sucesso!', 'success');
-            saveData();
-        }
-    });
-    
-    // Modal events
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal || e.target.classList.contains('modal-close')) {
-            closeHorarioModal();
-        }
-    });
-    
-    modalForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        saveHorario();
-    });
-}
-
-function renderHorariosGrid(turmaId) {
-    const turma = appData.turmas.find(t => t.id === turmaId);
-    if (!turma) return;
-    
-    const container = document.getElementById('horarios-grid');
-    const config = HORARIOS_CONFIG[turma.turno];
-    
-    let html = '<table class="grade-horarios">';
-    
-    // Header
-    html += '<thead><tr><th>Horário</th>';
-    
-    if (turma.turno === 'matutino') {
-        config.dias.forEach(dia => {
-            html += `<th>${formatDiaName(dia)}</th>`;
-        });
-    } else {
-        // Noturno - diferentes horários para cada dia
-        config.dias.forEach(dia => {
-            html += `<th>${formatDiaName(dia)}</th>`;
-        });
-    }
-    
-    html += '</tr></thead><tbody>';
-    
-    // Body
-    if (turma.turno === 'matutino') {
-        config.blocos.forEach(bloco => {
-            html += `<tr><td class="horario-label">${bloco.inicio} - ${bloco.fim}</td>`;
-            
-            config.dias.forEach(dia => {
-                const horario = getHorarioSlot(turmaId, dia, bloco.id);
-                html += `<td class="horario-slot ${horario ? 'ocupado' : ''}" 
-                            data-dia="${dia}" 
-                            data-bloco="${bloco.id}" 
-                            onclick="editHorarioSlot('${turmaId}', '${dia}', ${bloco.id})">`;
-                
-                if (horario) {
-                    const disciplina = appData.disciplinas.find(d => d.id === horario.idDisciplina);
-                    const professor = appData.professores.find(p => p.id === horario.idProfessor);
-                    const sala = appData.salas.find(s => s.id === horario.idSala);
-                    
-                    html += `<div class="horario-info">
-                                <div class="disciplina">${disciplina?.nome || 'N/A'}</div>
-                                <div class="professor">${professor?.nome || 'N/A'}</div>
-                                <div class="sala">${sala?.nome || 'N/A'}</div>
-                             </div>`;
-                } else {
-                    html += '<div class="horario-vazio">+</div>';
-                }
-                
-                html += '</td>';
-            });
-            
-            html += '</tr>';
-        });
-    } else {
-        // Noturno - lógica mais complexa
-        const maxBlocos = Math.max(...config.dias.map(dia => config.blocos[dia].length));
-        
-        for (let i = 0; i < maxBlocos; i++) {
-            html += '<tr>';
-            
-            // Primeira coluna com horários variados
-            const horarios = config.dias.map(dia => {
-                const bloco = config.blocos[dia][i];
-                return bloco ? `${bloco.inicio} - ${bloco.fim}` : '';
-            }).filter(h => h);
-            
-            const horarioUnico = [...new Set(horarios)];
-            html += `<td class="horario-label">${horarioUnico.join(' / ')}</td>`;
-            
-            config.dias.forEach(dia => {
-                const bloco = config.blocos[dia][i];
-                if (bloco) {
-                    const horario = getHorarioSlot(turmaId, dia, bloco.id);
-                    html += `<td class="horario-slot ${horario ? 'ocupado' : ''}" 
-                                data-dia="${dia}" 
-                                data-bloco="${bloco.id}" 
-                                onclick="editHorarioSlot('${turmaId}', '${dia}', ${bloco.id})">`;
-                    
-                    if (horario) {
-                        const disciplina = appData.disciplinas.find(d => d.id === horario.idDisciplina);
-                        const professor = appData.professores.find(p => p.id === horario.idProfessor);
-                        const sala = appData.salas.find(s => s.id === horario.idSala);
-                        
-                        html += `<div class="horario-info">
-                                    <div class="disciplina">${disciplina?.nome || 'N/A'}</div>
-                                    <div class="professor">${professor?.nome || 'N/A'}</div>
-                                    <div class="sala">${sala?.nome || 'N/A'}</div>
-                                 </div>`;
-                    } else {
-                        html += '<div class="horario-vazio">+</div>';
-                    }
-                    
-                    html += '</td>';
-                } else {
-                    html += '<td class="horario-slot disabled"></td>';
-                }
-            });
-            
-            html += '</tr>';
-        }
-    }
-    
-    html += '</tbody></table>';
-    container.innerHTML = html;
-}
-
-function formatDiaName(dia) {
-    const nomes = {
-        'segunda': 'Segunda',
-        'terca': 'Terça',
-        'quarta': 'Quarta',
-        'quinta': 'Quinta',
-        'sexta': 'Sexta',
-        'sabado': 'Sábado'
-    };
-    return nomes[dia] || dia;
-}
-
-function getHorarioSlot(turmaId, dia, bloco) {
-    return appData.horarios.find(h => 
-        h.idTurma === turmaId && 
-        h.diaSemana === dia && 
-        h.bloco === bloco
-    );
-}
-
-function editHorarioSlot(turmaId, dia, bloco) {
-    const turma = appData.turmas.find(t => t.id === turmaId);
-    if (!turma) return;
-    
-    currentSlot = { turmaId, dia, bloco };
-    
-    // Populate modal with current data if exists
-    const existingHorario = getHorarioSlot(turmaId, dia, bloco);
-    
-    if (existingHorario) {
-        document.getElementById('modal-disciplina').value = existingHorario.idDisciplina;
-        document.getElementById('modal-professor').value = existingHorario.idProfessor;
-        document.getElementById('modal-sala').value = existingHorario.idSala;
-    } else {
-        document.getElementById('horario-form').reset();
-    }
-    
-    // Update modal selects
-    updateModalSelects(turma);
-    
-    openHorarioModal();
-}
-
-function openHorarioModal() {
-    const modal = document.getElementById('horario-modal');
-    modal.classList.add('active');
-}
-
-function closeHorarioModal() {
-    const modal = document.getElementById('horario-modal');
-    modal.classList.remove('active');
-    currentSlot = null;
-}
-
-function updateModalSelects(turma) {
-    // Update disciplinas select - only for the turma's semester and turno
-    const disciplinaSelect = document.getElementById('modal-disciplina');
-    disciplinaSelect.innerHTML = '<option value="">Selecione a disciplina</option>';
-    
-    const disciplinasValidas = appData.disciplinas.filter(d => 
-        d.turno === turma.turno && d.semestre === turma.semestreCurricular
-    );
-    
-    disciplinasValidas.forEach(disciplina => {
-        const option = document.createElement('option');
-        option.value = disciplina.id;
-        option.textContent = `${disciplina.nome} (${disciplina.codigo})`;
-        disciplinaSelect.appendChild(option);
-    });
-    
-    // Update professores select - only those who can teach the selected disciplina
-    const professorSelect = document.getElementById('modal-professor');
-    professorSelect.innerHTML = '<option value="">Selecione o professor</option>';
-    
-    disciplinaSelect.addEventListener('change', () => {
-        const disciplinaId = disciplinaSelect.value;
-        professorSelect.innerHTML = '<option value="">Selecione o professor</option>';
-        
-        if (disciplinaId) {
-            const professoresValidos = appData.professores.filter(p => 
-                p.disciplinas.includes(disciplinaId)
-            );
-            
-            professoresValidos.forEach(professor => {
-                const option = document.createElement('option');
-                option.value = professor.id;
-                option.textContent = professor.nome;
-                professorSelect.appendChild(option);
-            });
-        }
-    });
-    
-    // Update salas select
-    const salaSelect = document.getElementById('modal-sala');
-    salaSelect.innerHTML = '<option value="">Selecione a sala</option>';
-    
-    appData.salas.forEach(sala => {
-        const option = document.createElement('option');
-        option.value = sala.id;
-        option.textContent = sala.nome;
-        salaSelect.appendChild(option);
-    });
-}
-
-function saveHorario() {
-    if (!currentSlot) return;
-    
-    const disciplinaId = document.getElementById('modal-disciplina').value;
-    const professorId = document.getElementById('modal-professor').value;
-    const salaId = document.getElementById('modal-sala').value;
-    
-    if (!disciplinaId || !professorId || !salaId) {
-        showAlert('Todos os campos são obrigatórios', 'error');
-        return;
-    }
-    
-    // Validações de conflito
-    const conflitos = validateHorarioConflicts(currentSlot, professorId, salaId);
-    
-    if (conflitos.length > 0) {
-        showAlert(`Conflitos detectados: ${conflitos.join(', ')}`, 'error');
-        return;
-    }
-    
-    // Remove existing horario if editing
-    appData.horarios = appData.horarios.filter(h => 
-        !(h.idTurma === currentSlot.turmaId && 
-          h.diaSemana === currentSlot.dia && 
-          h.bloco === currentSlot.bloco)
-    );
-    
-    // Add new horario
-    const novoHorario = {
-        id: generateId(),
-        diaSemana: currentSlot.dia,
-        bloco: currentSlot.bloco,
-        idTurma: currentSlot.turmaId,
-        idDisciplina: disciplinaId,
-        idProfessor: professorId,
-        idSala: salaId
-    };
-    
-    appData.horarios.push(novoHorario);
-    
-    // Update display
-    renderHorariosGrid(currentSlot.turmaId);
-    closeHorarioModal();
-    showAlert('Horário salvo com sucesso!', 'success');
-    saveData();
-}
-
-function validateHorarioConflicts(slot, professorId, salaId) {
-    const conflitos = [];
-    
-    // Check professor conflict
-    const professorConflict = appData.horarios.find(h => 
-        h.idProfessor === professorId && 
-        h.diaSemana === slot.dia && 
-        h.bloco === slot.bloco &&
-        !(h.idTurma === slot.turmaId && h.diaSemana === slot.dia && h.bloco === slot.bloco)
-    );
-    
-    if (professorConflict) {
-        const turmaConflito = appData.turmas.find(t => t.id === professorConflict.idTurma);
-        conflitos.push(`Professor já alocado na turma ${turmaConflito?.nome || 'N/A'}`);
-    }
-    
-    // Check sala conflict
-    const salaConflict = appData.horarios.find(h => 
-        h.idSala === salaId && 
-        h.diaSemana === slot.dia && 
-        h.bloco === slot.bloco &&
-        !(h.idTurma === slot.turmaId && h.diaSemana === slot.dia && h.bloco === slot.bloco)
-    );
-    
-    if (salaConflict) {
-        const turmaConflito = appData.turmas.find(t => t.id === salaConflict.idTurma);
-        conflitos.push(`Sala já ocupada pela turma ${turmaConflito?.nome || 'N/A'}`);
-    }
-    
-    return conflitos;
-}
-
-// Delete horario (right-click or delete button)
-function deleteHorario(turmaId, dia, bloco) {
-    if (confirm('Tem certeza que deseja excluir este horário?')) {
-        appData.horarios = appData.horarios.filter(h => 
-            !(h.idTurma === turmaId && h.diaSemana === dia && h.bloco === bloco)
-        );
-        
-        renderHorariosGrid(turmaId);
-        showAlert('Horário excluído com sucesso!', 'success');
-        saveData();
-    }
-}
-
-// Add right-click context menu for deleting horarios
-document.addEventListener('contextmenu', (e) => {
-    if (e.target.closest('.horario-slot.ocupado')) {
-        e.preventDefault();
-        
-        const slot = e.target.closest('.horario-slot');
-        const dia = slot.getAttribute('data-dia');
-        const bloco = parseInt(slot.getAttribute('data-bloco'));
-        const turmaId = document.getElementById('horario-turma').value;
-        
-        if (confirm('Deseja excluir este horário?')) {
-            deleteHorario(turmaId, dia, bloco);
-        }
-    }
-});
-
-
-// Impressão - Funcionalidades
-function initImpressao() {
-    const printTurmaBtn = document.getElementById('btn-print-turma');
-    const printProfessorBtn = document.getElementById('btn-print-professor');
-    
-    printTurmaBtn.addEventListener('click', () => {
-        const turmaId = document.getElementById('print-turma').value;
-        if (!turmaId) {
-            showAlert('Selecione uma turma', 'warning');
-            return;
-        }
-        generateTurmaPrint(turmaId);
-    });
-    
-    printProfessorBtn.addEventListener('click', () => {
-        const professorId = document.getElementById('print-professor').value;
-        if (!professorId) {
-            showAlert('Selecione um professor', 'warning');
-            return;
-        }
-        generateProfessorPrint(professorId);
-    });
-}
-
-function generateTurmaPrint(turmaId) {
-    const turma = appData.turmas.find(t => t.id === turmaId);
-    if (!turma) return;
-    
-    const preview = document.getElementById('print-preview');
-    preview.classList.remove('hidden');
-    
-    const config = HORARIOS_CONFIG[turma.turno];
-    const horariosData = appData.horarios.filter(h => h.idTurma === turmaId);
-    
-    let html = `
-        <div class="print-header">
-            <h2>Horário de Aulas - ${turma.nome}</h2>
-            <p>Curso: Ciências Econômicas - UESC</p>
-            <p>Gerado em: ${formatDateTime(new Date())}</p>
-        </div>
-        
-        <table class="grade-horarios print-table">
-            <thead>
-                <tr>
-                    <th>Horário</th>
-    `;
-    
-    if (turma.turno === 'matutino') {
-        config.dias.forEach(dia => {
-            html += `<th>${formatDiaName(dia)}</th>`;
-        });
-    } else {
-        config.dias.forEach(dia => {
-            html += `<th>${formatDiaName(dia)}</th>`;
-        });
-    }
-    
-    html += '</tr></thead><tbody>';
-    
-    if (turma.turno === 'matutino') {
-        config.blocos.forEach(bloco => {
-            html += `<tr><td class="horario-label">${bloco.inicio} - ${bloco.fim}</td>`;
-            
-            config.dias.forEach(dia => {
-                const horario = horariosData.find(h => h.diaSemana === dia && h.bloco === bloco.id);
-                html += '<td class="horario-cell">';
-                
-                if (horario) {
-                    const disciplina = appData.disciplinas.find(d => d.id === horario.idDisciplina);
-                    const professor = appData.professores.find(p => p.id === horario.idProfessor);
-                    const sala = appData.salas.find(s => s.id === horario.idSala);
-                    
-                    html += `
-                        <div class="print-horario-info">
-                            <div class="disciplina">${disciplina?.nome || 'N/A'}</div>
-                            <div class="professor">${professor?.nome || 'N/A'}</div>
-                            <div class="sala">Sala: ${sala?.nome || 'N/A'}</div>
-                        </div>
-                    `;
-                }
-                
-                html += '</td>';
-            });
-            
-            html += '</tr>';
-        });
-    } else {
-        // Noturno
-        const maxBlocos = Math.max(...config.dias.map(dia => config.blocos[dia].length));
-        
-        for (let i = 0; i < maxBlocos; i++) {
-            html += '<tr>';
-            
-            const horarios = config.dias.map(dia => {
-                const bloco = config.blocos[dia][i];
-                return bloco ? `${bloco.inicio} - ${bloco.fim}` : '';
-            }).filter(h => h);
-            
-            const horarioUnico = [...new Set(horarios)];
-            html += `<td class="horario-label">${horarioUnico.join(' / ')}</td>`;
-            
-            config.dias.forEach(dia => {
-                const bloco = config.blocos[dia][i];
-                html += '<td class="horario-cell">';
-                
-                if (bloco) {
-                    const horario = horariosData.find(h => h.diaSemana === dia && h.bloco === bloco.id);
-                    
-                    if (horario) {
-                        const disciplina = appData.disciplinas.find(d => d.id === horario.idDisciplina);
-                        const professor = appData.professores.find(p => p.id === horario.idProfessor);
-                        const sala = appData.salas.find(s => s.id === horario.idSala);
-                        
-                        html += `
-                            <div class="print-horario-info">
-                                <div class="disciplina">${disciplina?.nome || 'N/A'}</div>
-                                <div class="professor">${professor?.nome || 'N/A'}</div>
-                                <div class="sala">Sala: ${sala?.nome || 'N/A'}</div>
-                            </div>
-                        `;
-                    }
-                }
-                
-                html += '</td>';
-            });
-            
-            html += '</tr>';
-        }
-    }
-    
-    html += '</tbody></table>';
-    
-    html += `
-        <div class="print-footer">
-            <button class="btn btn-primary" onclick="printPage()">
-                <i class="fas fa-print"></i>
-                Imprimir
-            </button>
-            <button class="btn btn-secondary" onclick="closePrintPreview()">
-                <i class="fas fa-times"></i>
-                Fechar
-            </button>
-        </div>
-    `;
-    
-    preview.innerHTML = html;
-    
-    // Scroll to preview
-    preview.scrollIntoView({ behavior: 'smooth' });
-}
-
-function generateProfessorPrint(professorId) {
-    const professor = appData.professores.find(p => p.id === professorId);
-    if (!professor) return;
-    
-    const preview = document.getElementById('print-preview');
-    preview.classList.remove('hidden');
-    
-    const horariosData = appData.horarios.filter(h => h.idProfessor === professorId);
-    
-    // Group by turno
-    const horariosPorTurno = {
-        matutino: horariosData.filter(h => {
-            const turma = appData.turmas.find(t => t.id === h.idTurma);
-            return turma?.turno === 'matutino';
-        }),
-        noturno: horariosData.filter(h => {
-            const turma = appData.turmas.find(t => t.id === h.idTurma);
-            return turma?.turno === 'noturno';
-        })
-    };
-    
-    let html = `
-        <div class="print-header">
-            <h2>Horário do Professor - ${professor.nome}</h2>
-            <p>Curso: Ciências Econômicas - UESC</p>
-            <p>Email: ${professor.email || 'Não informado'}</p>
-            <p>Gerado em: ${formatDateTime(new Date())}</p>
-        </div>
-    `;
-    
-    // Matutino
-    if (horariosPorTurno.matutino.length > 0) {
-        html += '<h3>Turno Matutino</h3>';
-        html += generateProfessorTurnoTable('matutino', horariosPorTurno.matutino);
-    }
-    
-    // Noturno
-    if (horariosPorTurno.noturno.length > 0) {
-        html += '<h3>Turno Noturno</h3>';
-        html += generateProfessorTurnoTable('noturno', horariosPorTurno.noturno);
-    }
-    
-    if (horariosData.length === 0) {
-        html += '<p class="no-activity">Este professor não possui horários cadastrados.</p>';
-    }
-    
-    html += `
-        <div class="print-footer">
-            <button class="btn btn-primary" onclick="printPage()">
-                <i class="fas fa-print"></i>
-                Imprimir
-            </button>
-            <button class="btn btn-secondary" onclick="closePrintPreview()">
-                <i class="fas fa-times"></i>
-                Fechar
-            </button>
-        </div>
-    `;
-    
-    preview.innerHTML = html;
-    preview.scrollIntoView({ behavior: 'smooth' });
-}
-
-function generateProfessorTurnoTable(turno, horariosData) {
-    const config = HORARIOS_CONFIG[turno];
-    
-    let html = `
-        <table class="grade-horarios print-table">
-            <thead>
-                <tr>
-                    <th>Horário</th>
-    `;
-    
-    config.dias.forEach(dia => {
-        html += `<th>${formatDiaName(dia)}</th>`;
-    });
-    
-    html += '</tr></thead><tbody>';
-    
-    if (turno === 'matutino') {
-        config.blocos.forEach(bloco => {
-            html += `<tr><td class="horario-label">${bloco.inicio} - ${bloco.fim}</td>`;
-            
-            config.dias.forEach(dia => {
-                const horario = horariosData.find(h => h.diaSemana === dia && h.bloco === bloco.id);
-                html += '<td class="horario-cell">';
-                
-                if (horario) {
-                    const disciplina = appData.disciplinas.find(d => d.id === horario.idDisciplina);
-                    const turma = appData.turmas.find(t => t.id === horario.idTurma);
-                    const sala = appData.salas.find(s => s.id === horario.idSala);
-                    
-                    html += `
-                        <div class="print-horario-info">
-                            <div class="disciplina">${disciplina?.nome || 'N/A'}</div>
-                            <div class="turma">${turma?.nome || 'N/A'}</div>
-                            <div class="sala">Sala: ${sala?.nome || 'N/A'}</div>
-                        </div>
-                    `;
-                }
-                
-                html += '</td>';
-            });
-            
-            html += '</tr>';
-        });
-    } else {
-        // Noturno
-        const maxBlocos = Math.max(...config.dias.map(dia => config.blocos[dia].length));
-        
-        for (let i = 0; i < maxBlocos; i++) {
-            html += '<tr>';
-            
-            const horarios = config.dias.map(dia => {
-                const bloco = config.blocos[dia][i];
-                return bloco ? `${bloco.inicio} - ${bloco.fim}` : '';
-            }).filter(h => h);
-            
-            const horarioUnico = [...new Set(horarios)];
-            html += `<td class="horario-label">${horarioUnico.join(' / ')}</td>`;
-            
-            config.dias.forEach(dia => {
-                const bloco = config.blocos[dia][i];
-                html += '<td class="horario-cell">';
-                
-                if (bloco) {
-                    const horario = horariosData.find(h => h.diaSemana === dia && h.bloco === bloco.id);
-                    
-                    if (horario) {
-                        const disciplina = appData.disciplinas.find(d => d.id === horario.idDisciplina);
-                        const turma = appData.turmas.find(t => t.id === horario.idTurma);
-                        const sala = appData.salas.find(s => s.id === horario.idSala);
-                        
-                        html += `
-                            <div class="print-horario-info">
-                                <div class="disciplina">${disciplina?.nome || 'N/A'}</div>
-                                <div class="turma">${turma?.nome || 'N/A'}</div>
-                                <div class="sala">Sala: ${sala?.nome || 'N/A'}</div>
-                            </div>
-                        `;
-                    }
-                }
-                
-                html += '</td>';
-            });
-            
-            html += '</tr>';
-        }
-    }
-    
-    html += '</tbody></table>';
-    return html;
-}
-
-function printPage() {
-    window.print();
-}
-
-function closePrintPreview() {
-    const preview = document.getElementById('print-preview');
-    preview.classList.add('hidden');
-    preview.innerHTML = '';
-}
 
