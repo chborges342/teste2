@@ -26,36 +26,26 @@ const HORARIOS_CONFIG = {
     },
     noturno: {
         dias: ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'],
-               ],
+        blocos: {
             'segunda': [
                 { id: 1, inicio: '18:40', fim: '19:30' },
-                { id: 2, inicio: '19:30', fim: '20:20' },
-                { id: 3, inicio: '20:20', fim: '21:10' },
-                { id: 4, inicio: '21:10', fim: '22:00' }
+                { id: 2, inicio: '19:30', fim: '20:20' }
             ],
             'terca': [
                 { id: 1, inicio: '18:40', fim: '19:30' },
-                { id: 2, inicio: '19:30', fim: '20:20' },
-                { id: 3, inicio: '20:20', fim: '21:10' },
-                { id: 4, inicio: '21:10', fim: '22:00' }
+                { id: 2, inicio: '19:30', fim: '20:20' }
             ],
             'quarta': [
                 { id: 1, inicio: '18:40', fim: '19:30' },
-                { id: 2, inicio: '19:30', fim: '20:20' },
-                { id: 3, inicio: '20:20', fim: '21:10' },
-                { id: 4, inicio: '21:10', fim: '22:00' }
+                { id: 2, inicio: '19:30', fim: '20:20' }
             ],
             'quinta': [
                 { id: 1, inicio: '18:40', fim: '19:30' },
-                { id: 2, inicio: '19:30', fim: '20:20' },
-                { id: 3, inicio: '20:20', fim: '21:10' },
-                { id: 4, inicio: '21:10', fim: '22:00' }
+                { id: 2, inicio: '19:30', fim: '20:20' }
             ],
             'sexta': [
                 { id: 1, inicio: '18:40', fim: '19:30' },
-                { id: 2, inicio: '19:30', fim: '20:20' },
-                { id: 3, inicio: '20:20', fim: '21:10' },
-                { id: 4, inicio: '21:10', fim: '22:00' }
+                { id: 2, inicio: '19:30', fim: '20:20' }
             ],
             'sabado': [
                 { id: 1, inicio: '07:30', fim: '08:20' },
@@ -315,8 +305,8 @@ function initDisciplinas() {
             return;
         }
         
-        // Check if codigo already exists for the same turno
-        if (appData.disciplinas.some(d => d.codigo === codigo && d.turno === turno)) {
+        // Check if codigo already exists
+        if (appData.disciplinas.some(d => d.codigo === codigo)) {
             showAlert('Código da disciplina já existe', 'error');
             return;
         }
