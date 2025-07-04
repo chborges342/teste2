@@ -30,56 +30,77 @@ const auth = getAuth(app); // Importado mas não usado ativamente no exemplo do 
 // ----------------------------------------------------
 // Passo 2: Referências aos Elementos HTML
 // ----------------------------------------------------
+const loggedOutView = document.getElementById('logged-out-view');
+const loggedInView = document.getElementById('logged-in-view');
+const userEmailDisplay = document.getElementById('user-email-display');
+const logoutButton = document.getElementById('logout-button');
+
+// Formulários e Inputs
+const loginForm = document.getElementById('login-form');
+const loginEmailInput = document.getElementById('login-email');
+const loginPasswordInput = document.getElementById('login-password');
+const loginErrorDisplay = document.getElementById('login-error');
+
+const signupForm = document.getElementById('signup-form');
+const signupEmailInput = document.getElementById('signup-email');
+const signupPasswordInput = document.getElementById('signup-password');
+const signupErrorDisplay = document.getElementById('signup-error');
+
+// Referências às seções principais do app, para mostrar/esconder
+const authSection = document.getElementById('auth-section');
+const mainContent = document.querySelector('main'); // Referência à sua tag <main>
+
+
+// ... (suas referências existentes de taskForm, tasksTableBody, etc.) ...
 const taskForm = document.getElementById('task-form');
 const tasksTableBody = document.getElementById('tasks-table-body');
 const taskAssigneeSelect = document.getElementById('task-assignee');
 const filterStatusSelect = document.getElementById('filter-status');
 const filterAssigneeSelect = document.getElementById('filter-assignee');
 const taskSeiProcessInput = document.getElementById('task-sei-process');
-// NOVAS REFERÊNCIAS PARA OS FILTROS DE DATA
 const filterStartDateInput = document.getElementById('filter-start-date');
 const filterEndDateInput = document.getElementById('filter-end-date');
 
-
-let currentUserId = null; // Para armazenar o ID do usuário logado
-
+let currentUserId = null;
 
 // ----------------------------------------------------
-// Passo 3: Funções de Autenticação (Exemplo Básico)
-// Para seu sistema, você precisará de uma tela de login/cadastro
-// Aqui, vou mostrar como você pode autenticar um usuário
-// e usar o ID dele para associar tarefas.
+// Gerenciamento do Estado de Autenticação (onAuthStateChanged)
+// Este é o coração da autenticação!
 // ----------------------------------------------------
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        // Usuário está logado
+        currentUserId = user.uid;
+        userEmailDisplay.textContent = user.email; // Mostra o email do usuário
+        loggedInView.style.display = 'block';
+        loggedOutView.style.display = 'none';
+        
+        // Mostra o conteúdo principal do app (tarefas, formulário, etc.)
+        mainContent.style.display = 'block'; // Assumindo que <main> estava hidden
+        authSection.style.display = 'none'; // Oculta a seção de autenticação
 
-// Exemplo: Login anônimo para testar (NÃO USE EM PRODUÇÃO!)
-// onAuthStateChanged(auth, (user) => {
-//     if (user) {
-//         currentUserId = user.uid;
-//         console.log("Usuário autenticado:", user.email || "Anônimo", user.uid);
-//         // Carregar colaboradores e tarefas após a autenticação
-//         populateAssigneeSelect();
-//         listenForTasks();
-//     } else {
-//         console.log("Nenhum usuário logado. Tentando login anônimo...");
-//         signInAnonymously(auth)
-//             .then(() => {
-//                 // Logado
-//             })
-//             .catch((error) => {
-//                 console.error("Erro no login anônimo:", error);
-//             });
-//     }
-// });
+        console.log("Usuário autenticado:", user.email, user.uid);
 
-// Para um sistema real, você precisaria de:
-// 1. Uma interface de cadastro e login.
-// 2. Funções como createUserWithEmailAndPassword(auth, email, password)
-// 3. Funções como signInWithEmailAndPassword(auth, email, password)
-// Para este exemplo, vamos simular que um usuário está logado e que os colaboradores
-// são gerenciados em uma coleção separada ou no próprio Authentication.
-// Por simplicidade, para iniciar, vamos usar um usuário fixo ou deixar a atribuição livre.
-// Para testar sem login, comente o bloco acima e chame `populateAssigneeSelect()` e `listenForTasks()` diretamente.
-// Para os colaboradores, podemos buscar uma lista de usuários (se você tiver uma coleção `users` no Firestore)
+        // Chame as funções que dependem de um usuário logado
+        populateAssigneeSelect(); // Continua buscando colaboradores
+        listenForTasks(); // Começa a ouvir as tarefas
+        applyFilters(); // Aplica filtros iniciais
+    } else {
+        // Usuário não está logado
+        currentUserId = null;
+        userEmailDisplay.textContent = '';
+        loggedInView.style.display = 'none';
+        loggedOutView.style.display = 'block';
+
+        // Oculta o conteúdo principal do app e mostra a seção de autenticação
+        mainContent.style.display = 'none'; // Esconde o conteúdo principal
+        authSection.style.display = 'block'; // Mostra a seção de login/cadastro
+
+        console.log("Nenhum usuário logado.");
+        tasksTableBody.innerHTML = '<tr><td colspan="9">Faça login para ver e gerenciar tarefas.</td></tr>'; // Limpa tabela e avisa
+    }
+});
+
 
 // ----------------------------------------------------
 // Passo 4: Carregar Colaboradores (Exemplo)
