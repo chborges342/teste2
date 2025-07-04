@@ -13,40 +13,43 @@
 
 
 <section id="auth-section">
-    <div id="logged-out-view"> <!-- Remova o style="display: none;" daqui! -->
+    <div id="logged-out-view">
         <h2>Bem-vindo! Faça Login ou Cadastre-se</h2>
 
-        <div class="auth-form">
-            <h3>Login</h3>
-            <form id="login-form">
-                <div class="form-group">
-                    <label for="login-email">Email:</label>
-                    <input type="email" id="login-email" required>
-                </div>
-                <div class="form-group">
-                    <label for="login-password">Senha:</label>
-                    <input type="password" id="login-password" required>
-                </div>
-                <button type="submit">Entrar</button>
-                <p id="login-error" class="error-message"></p>
-            </form>
-        </div>
+        <div class="auth-forms-wrapper"> <!-- NOVO CONTAINER AQUI! -->
+            <div class="auth-form">
+                <h3>Login</h3>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="login-email">Email:</label>
+                        <input type="email" id="login-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Senha:</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit">Entrar</button>
+                    <p id="login-error" class="error-message"></p>
+                </form>
+            </div>
 
-        <div class="auth-form">
-            <h3>Cadastre-se</h3>
-            <form id="signup-form">
-                <div class="form-group">
-                    <label for="signup-email">Email:</label>
-                    <input type="email" id="signup-email" required>
-                </div>
-                <div class="form-group">
-                    <label for="signup-password">Senha:</label>
-                    <input type="password" id="signup-password" required>
-                </div>
-                <button type="submit">Cadastrar</button>
-                <p id="signup-error" class="error-message"></p>
-            </form>
-        </div>
+            <div class="auth-form">
+                <h3>Cadastre-se</h3>
+                <form id="signup-form">
+                    <div class="form-group">
+                        <label for="signup-email">Email:</label>
+                        <input type="email" id="signup-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-password">Senha:</label>
+                        <input type="password" id="signup-password" required>
+                    </div>
+                    <button type="submit">Cadastrar</button>
+                    <p id="signup-error" class="error-message"></p>
+                </form>
+            </div>
+        </div> <!-- FIM DO NOVO CONTAINER -->
+
     </div>
 
     <div id="logged-in-view" style="display: none;">
