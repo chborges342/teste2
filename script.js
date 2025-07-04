@@ -105,18 +105,17 @@ onAuthStateChanged(auth, (user) => {
 // ----------------------------------------------------
 // Passo 4: Carregar Colaboradores (Exemplo)
 // ----------------------------------------------------
-async function populateAssigneeSelect() {
+async function populateAssigneeSelect() { // 'async' pode ser removido se não houver outros awaits
     try {
-        // Exemplo: Buscar colaboradores de uma coleção 'colaboradores' no Firestore
-        // Ou, se você usar Firebase Auth, listar usuários (requer Cloud Functions para segurança)
         const collaboratorsCol = collection(db, "colaboradores");
-        const querySnapshot = await onSnapshot(collaboratorsCol, (snapshot) => {
+        // const querySnapshot = await onSnapshot(...); // <-- Remova o 'await'
+        const unsubscribe = onSnapshot(collaboratorsCol, (snapshot) => { // 'unsubscribe' receberá a função de desinscrição
             taskAssigneeSelect.innerHTML = '<option value="">Selecione um colaborador</option>';
             filterAssigneeSelect.innerHTML = '<option value="all">Todos</option>';
             snapshot.forEach((doc) => {
                 const collaborator = doc.data();
                 const option = document.createElement('option');
-                option.value = collaborator.email; // Ou collaborator.name, o que preferir
+                option.value = collaborator.email;
                 option.textContent = collaborator.name || collaborator.email;
                 taskAssigneeSelect.appendChild(option);
 
@@ -126,13 +125,12 @@ async function populateAssigneeSelect() {
                 filterAssigneeSelect.appendChild(filterOption);
             });
         });
+        // Você pode retornar 'unsubscribe' daqui se precisar gerenciá-lo fora desta função
+        // return unsubscribe;
     } catch (e) {
         console.error("Erro ao carregar colaboradores: ", e);
     }
 }
-
-// Chame a função para popular os colaboradores
-populateAssigneeSelect();
 
 // ----------------------------------------------------
 // Passo 5: Adicionar Nova Tarefa
