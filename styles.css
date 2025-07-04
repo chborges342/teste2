@@ -533,7 +533,7 @@ body {
 }
 
 .grade-horarios .horario-slot.ocupado {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, #e3ea66, #764ba2);
     color: white;
 }
 
