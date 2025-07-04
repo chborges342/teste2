@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Tarefas - UESC</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Sistema de Gestão de Tarefas - Colegiado de Ciências Econômicas</h1>
+    </header>
+
+
+<section id="auth-section">
+    <div id="logged-out-view" style="display: none;">
+        <h2>Bem-vindo! Faça Login ou Cadastre-se</h2>
+
+        <div class="auth-form">
+            <h3>Login</h3>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Email:</label>
+                    <input type="email" id="login-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Senha:</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button type="submit">Entrar</button>
+                <p id="login-error" class="error-message"></p>
+            </form>
+        </div>
+
+        <div class="auth-form">
+            <h3>Cadastre-se</h3>
+            <form id="signup-form">
+                <div class="form-group">
+                    <label for="signup-email">Email:</label>
+                    <input type="email" id="signup-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-password">Senha:</label>
+                    <input type="password" id="signup-password" required>
+                </div>
+                <button type="submit">Cadastrar</button>
+                <p id="signup-error" class="error-message"></p>
+            </form>
+        </div>
+    </div>
+
+    <div id="logged-in-view" style="display: none;">
+        <p>Logado como: <span id="user-email-display"></span></p>
+        <button id="logout-button">Sair</button>
+    </div>
+</section>
+
+
+
+
+    <main>
+        <section id="cadastro-tarefa">
+            <h2>Adicionar Nova Tarefa</h2>
+            <form id="task-form">
+                <div class="form-group">
+                    <label for="task-description">Descrição da Tarefa:</label>
+                    <input type="text" id="task-description" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="task-type">Tipo de Tarefa:</label>
+                    <select id="task-type" required>
+                        <option value="">Selecione um tipo</option>
+                        <option value="Aproveitamento">Aproveitamento</option>
+                        <option value="AACC">AACC</option>
+                        <option value="Retorno">Retorno</option>
+                        <option value="Trancamento">Trancamento</option>
+                        <option value="Agendamento/Defesa de Monografia">Agendamento/Defesa de Monografia</option>
+                        <option value="Consepe">Consepe</option>
+                        <option value="Exercício domiciliar">Exercício domiciliar</option>
+                        <option value="Estágio">Estágio</option>
+                        <option value="Curricularização da Extensão">Curricularização da Extensão</option>
+                        <option value="Solicitação Veículo/Transporte">Solicitação Veículo/Transporte</option>
+                        <option value="Comunicação outras unidades">Comunicação outras unidades</option>
+                        <option value="Outros">Outros</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="task-sei-process">Processo SEI:</label>
+                    <input type="text" id="task-sei-process">
+                </div>
+
+                <div class="form-group">
+                    <label for="task-assignee">Colaborador Atribuído:</label>
+                    <select id="task-assignee" required>
+                        <option value="">Selecione um colaborador</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="task-deadline">Prazo de Conclusão:</label>
+                    <input type="date" id="task-deadline" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="task-priority">Prioridade:</label>
+                    <select id="task-priority" required>
+                        <option value="Alta">Alta</option>
+                        <option value="Média">Média</option>
+                        <option value="Baixa">Baixa</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="task-observations">Observações:</label>
+                    <textarea id="task-observations" rows="3"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="task-status">Status:</label>
+                    <select id="task-status" required>
+                        <option value="Não Iniciado">Não Iniciado</option>
+                        <option value="Em Andamento">Em Andamento</option>
+                        <option value="Pendente">Pendente</option>
+                        <option value="Concluído">Concluído</option>
+                    </select>
+                </div>
+
+                <button type="submit">Salvar Tarefa</button>
+            </form>
+        </section>
+
+        <section id="lista-tarefas">
+            <h2>Minhas Tarefas</h2>
+            <div class="filters">
+                <label for="filter-status">Filtrar por Status:</label>
+                <select id="filter-status">
+                    <option value="all">Todos</option>
+                    <option value="Não Iniciado">Não Iniciado</option>
+                    <option value="Em Andamento">Em Andamento</option>
+                    <option value="Pendente">Pendente</option>
+                    <option value="Concluído">Concluído</option>
+                </select>
+
+                <label for="filter-assignee">Filtrar por Colaborador:</label>
+                <select id="filter-assignee">
+                    <option value="all">Todos</option>
+                </select>
+
+                <!-- NOVOS FILTROS DE PERÍODO -->
+                <label for="filter-start-date">De:</label>
+                <input type="date" id="filter-start-date">
+
+                <label for="filter-end-date">Até:</label>
+                <input type="date" id="filter-end-date">
+            </div>
+            
+            <div class="task-list-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Descrição</th>
+                            <th>Tipo</th>
+                            <th>Processo SEI</th>
+                            <th>Colaborador</th>
+                            <th>Prazo</th>
+                            <th>Prioridade</th>
+                            <th>Observações</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tasks-table-body">
+                        <!-- Tarefas serão inseridas aqui pelo JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="painel-resumo">
+            <h2>Painel de Resumo</h2>
+            <p>Resumo das tarefas por tipo, colaborador e status aparecerá aqui.</p>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Gestão de Tarefas - UESC</p>
+    </footer>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
