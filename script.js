@@ -1,6 +1,8 @@
 // script.js
 
-// Configuração do Firebase
+// ----------------------------------------------------
+// 1. Configuração do Firebase
+// ----------------------------------------------------
 const firebaseConfig = {
     apiKey: "AIzaSyASeIQJoEC5FmH3N85uf0O93ngYxvFS-T8",
     authDomain: "gestaotarefas-862e0.firebaseapp.com",
@@ -14,7 +16,7 @@ const firebaseConfig = {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
 import { 
     getFirestore, collection, addDoc, onSnapshot, 
-    query, orderBy, doc, updateDoc, deleteDoc, where, getDoc 
+    query, orderBy, doc, updateDoc, deleteDoc, where, getDoc
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 import { 
     getAuth, createUserWithEmailAndPassword, 
@@ -26,7 +28,10 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Elementos DOM
+// ----------------------------------------------------
+// 2. Referências aos Elementos HTML
+// ----------------------------------------------------
+// Autenticação
 const loggedOutView = document.getElementById('logged-out-view');
 const loggedInView = document.getElementById('logged-in-view');
 const userEmailDisplay = document.getElementById('user-email-display');
@@ -39,9 +44,13 @@ const signupForm = document.getElementById('signup-form');
 const signupEmailInput = document.getElementById('signup-email');
 const signupPasswordInput = document.getElementById('signup-password');
 const signupErrorDisplay = document.getElementById('signup-error');
+
+// Tarefas
 const taskForm = document.getElementById('task-form');
 const tasksTableBody = document.getElementById('tasks-table-body');
 const cancelEditBtn = document.getElementById('cancel-edit-btn');
+
+// Filtros
 const taskAssigneeSelect = document.getElementById('task-assignee');
 const filterStatusSelect = document.getElementById('filter-status');
 const filterAssigneeSelect = document.getElementById('filter-assignee');
@@ -50,12 +59,15 @@ const filterStartDateInput = document.getElementById('filter-start-date');
 const filterEndDateInput = document.getElementById('filter-end-date');
 const resetFiltersBtn = document.getElementById('reset-filters-btn');
 
-// Variáveis de estado
+// Variáveis de Estado
 let currentUserId = null;
+let currentUserEmail = null;
 let assigneeListenerUnsubscribe = null;
 let tasksListenerUnsubscribe = null;
 
-// Funções auxiliares
+// ----------------------------------------------------
+// 3. Funções Auxiliares
+// ----------------------------------------------------
 function showMessage(message, isError = false) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `flash-message ${isError ? 'flash-error' : 'flash-success'}`;
@@ -87,7 +99,9 @@ function escapeHtml(str) {
         .replace(/'/g, '&#39;');
 }
 
-// Autenticação
+// ----------------------------------------------------
+// 4. Autenticação
+// ----------------------------------------------------
 loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = loginEmailInput.value.trim();
@@ -135,46 +149,40 @@ logoutButton.addEventListener('click', () => {
     });
 });
 
-// Monitor de autenticação
 onAuthStateChanged(auth, (user) => {
-    console.log("Estado de autenticação alterado:", user);
-    
     if (user) {
-        console.log("Usuário logado:", user.uid, user.email);
         currentUserId = user.uid;
+        currentUserEmail = user.email;
         userEmailDisplay.textContent = user.email;
         loggedInView.style.display = 'block';
         loggedOutView.style.display = 'none';
         document.querySelector('main').style.display = 'block';
         document.getElementById('auth-section').style.display = 'none';
 
-        // Iniciar listeners
         subscribeAssigneeSelect();
         subscribeAndApplyFilters();
     } else {
-        console.log("Usuário deslogado");
         currentUserId = null;
+        currentUserEmail = null;
         userEmailDisplay.textContent = '';
         loggedInView.style.display = 'none';
         loggedOutView.style.display = 'block';
         document.querySelector('main').style.display = 'none';
         document.getElementById('auth-section').style.display = 'block';
 
-        // Encerrar listeners
         unsubscribeAssigneeSelect();
         unsubscribeFromTasks();
-        tasksTableBody.innerHTML = '<tr><td colspan="9">Faça login para ver e gerenciar tarefas.</td></tr>';
+        tasksTableBody.innerHTML = '<tr><td colspan="10">Faça login para ver e gerenciar tarefas.</td></tr>';
     }
 });
 
-// Gerenciamento de colaboradores
+// ----------------------------------------------------
+// 5. Gerenciamento de Colaboradores
+// ----------------------------------------------------
 function subscribeAssigneeSelect() {
-    if (assigneeListenerUnsubscribe) {
-        assigneeListenerUnsubscribe();
-    }
+    if (assigneeListenerUnsubscribe) assigneeListenerUnsubscribe();
 
     const q = query(collection(db, "colaboradores"), orderBy("name"));
-    
     assigneeListenerUnsubscribe = onSnapshot(q, 
         (snapshot) => {
             taskAssigneeSelect.innerHTML = '<option value="">Selecione um colaborador</option>';
@@ -203,11 +211,12 @@ function unsubscribeAssigneeSelect() {
     }
 }
 
-// CRUD de tarefas
+// ----------------------------------------------------
+// 6. CRUD de Tarefas (Compartilhado)
+// ----------------------------------------------------
 taskForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    // Validação
     const description = document.getElementById('task-description').value.trim();
     const deadline = document.getElementById('task-deadline').value;
     
@@ -219,7 +228,6 @@ taskForm.addEventListener('submit', async (e) => {
     const submitButton = taskForm.querySelector('button[type="submit"]');
     const isEditMode = submitButton.textContent.includes("Atualizar");
 
-    // Preparar dados
     const taskData = {
         description,
         type: document.getElementById('task-type').value,
@@ -230,7 +238,8 @@ taskForm.addEventListener('submit', async (e) => {
         observations: document.getElementById('task-observations').value.trim(),
         status: document.getElementById('task-status').value,
         updatedAt: new Date(),
-        userId: currentUserId
+        userId: currentUserId, // Para registro, não para controle de acesso
+        createdBy: currentUserEmail // Mostra quem criou a tarefa
     };
 
     if (!isEditMode) {
@@ -246,21 +255,17 @@ taskForm.addEventListener('submit', async (e) => {
             showMessage('Tarefa adicionada com sucesso!');
         }
         
-        // Resetar formulário
         taskForm.reset();
         submitButton.textContent = "Salvar Tarefa";
         delete submitButton.dataset.taskId;
         
-        if (cancelEditBtn) {
-            cancelEditBtn.style.display = 'none';
-        }
+        if (cancelEditBtn) cancelEditBtn.style.display = 'none';
     } catch (error) {
         console.error("Erro ao salvar tarefa:", error);
         showMessage(`Erro ao ${isEditMode ? 'atualizar' : 'salvar'} tarefa: ${error.message}`, true);
     }
 });
 
-// Botão cancelar edição
 if (cancelEditBtn) {
     cancelEditBtn.addEventListener('click', () => {
         taskForm.reset();
@@ -271,31 +276,19 @@ if (cancelEditBtn) {
     });
 }
 
-// Renderização de tarefas
 function renderTask(task) {
     try {
-        if (!task || typeof task !== 'object') {
-            console.error("Tarefa inválida:", task);
-            return;
-        }
-
         const row = tasksTableBody.insertRow();
         row.setAttribute('data-id', task.id);
         
-        // Formatar data
-        let deadlineFormatted = 'N/A';
-        try {
-            if (task.deadline) {
-                const deadlineDate = formatFirebaseDate(task.deadline);
-                deadlineFormatted = deadlineDate ? deadlineDate.toLocaleDateString('pt-BR') : 'N/A';
-            }
-        } catch (error) {
-            console.error("Erro ao formatar data:", error);
-        }
+        const deadlineDate = formatFirebaseDate(task.deadline);
+        const deadlineFormatted = deadlineDate ? deadlineDate.toLocaleDateString('pt-BR') : 'N/A';
+        
+        const isOwner = task.userId === currentUserId;
+        const ownerBadge = isOwner ? '<span class="owner-badge">(Sua tarefa)</span>' : '';
 
-        // Criar linha da tabela
         row.innerHTML = `
-            <td>${escapeHtml(task.description)}</td>
+            <td>${escapeHtml(task.description)} ${ownerBadge}</td>
             <td>${escapeHtml(task.type)}</td>
             <td>${escapeHtml(task.seiProcess)}</td>
             <td>${escapeHtml(task.assignee)}</td>
@@ -303,24 +296,22 @@ function renderTask(task) {
             <td>${escapeHtml(task.priority)}</td>
             <td>${escapeHtml(task.observations)}</td>
             <td><span class="status status-${(task.status || '').replace(/\s/g, '-')}">${escapeHtml(task.status)}</span></td>
+            <td>${escapeHtml(task.createdBy || 'Sistema')}</td>
             <td class="action-buttons">
-                <button class="edit-btn" data-id="${task.id}">✏️</button>
-                <button class="delete-btn" data-id="${task.id}">🗑️</button>
+                <button class="edit-btn" data-id="${task.id}" ${!isOwner ? 'disabled' : ''}>✏️</button>
+                <button class="delete-btn" data-id="${task.id}" ${!isOwner ? 'disabled' : ''}>🗑️</button>
             </td>
         `;
 
-        // Adicionar listeners
-        row.querySelector('.edit-btn')?.addEventListener('click', () => editTask(task.id));
-        row.querySelector('.delete-btn')?.addEventListener('click', () => deleteTask(task.id));
-
+        if (isOwner) {
+            row.querySelector('.edit-btn').addEventListener('click', () => editTask(task.id));
+            row.querySelector('.delete-btn').addEventListener('click', () => deleteTask(task.id));
+        }
     } catch (error) {
-        console.error("Erro crítico ao renderizar tarefa:", error);
-        const errorRow = tasksTableBody.insertRow();
-        errorRow.innerHTML = `<td colspan="9" style="color: red;">Erro ao carregar tarefa ${task?.id || 'desconhecida'}</td>`;
+        console.error("Erro ao renderizar tarefa:", error);
     }
 }
 
-// Edição de tarefas
 async function editTask(id) {
     try {
         const taskDoc = await getDoc(doc(db, "tarefas", id));
@@ -333,7 +324,6 @@ async function editTask(id) {
         const taskData = taskDoc.data();
         const deadlineDate = formatFirebaseDate(taskData.deadline);
         
-        // Preencher formulário
         document.getElementById('task-description').value = taskData.description || '';
         document.getElementById('task-type').value = taskData.type || '';
         document.getElementById('task-sei-process').value = taskData.seiProcess || '';
@@ -343,25 +333,19 @@ async function editTask(id) {
         document.getElementById('task-observations').value = taskData.observations || '';
         document.getElementById('task-status').value = taskData.status || 'Não Iniciado';
 
-        // Configurar modo edição
         const submitButton = taskForm.querySelector('button[type="submit"]');
         submitButton.textContent = "Atualizar Tarefa";
         submitButton.dataset.taskId = id;
         
-        if (cancelEditBtn) {
-            cancelEditBtn.style.display = 'block';
-        }
+        if (cancelEditBtn) cancelEditBtn.style.display = 'block';
         
-        // Scroll para o formulário
         document.getElementById('cadastro-tarefa').scrollIntoView({ behavior: 'smooth' });
-        
     } catch (error) {
         console.error("Erro ao carregar tarefa:", error);
         showMessage('Erro ao carregar tarefa: ' + error.message, true);
     }
 }
 
-// Exclusão de tarefas
 async function deleteTask(id) {
     if (!confirm("Tem certeza que deseja excluir esta tarefa?")) return;
     
@@ -374,53 +358,34 @@ async function deleteTask(id) {
     }
 }
 
-// Filtros
+// ----------------------------------------------------
+// 7. Filtros Compartilhados
+// ----------------------------------------------------
 function subscribeAndApplyFilters() {
-    // Cancelar listener anterior
-    if (tasksListenerUnsubscribe) {
-        tasksListenerUnsubscribe();
-    }
-
-    // Verificar usuário logado
-    if (!currentUserId) {
-        tasksTableBody.innerHTML = '<tr><td colspan="9">Faça login para ver tarefas.</td></tr>';
-        return;
-    }
+    if (tasksListenerUnsubscribe) tasksListenerUnsubscribe();
 
     try {
-        // Construir query base
         let q = query(
             collection(db, "tarefas"),
-            where("userId", "==", currentUserId),
             orderBy("createdAt", "desc")
         );
 
-        // Aplicar filtros
         const selectedStatus = filterStatusSelect.value;
         const selectedAssignee = filterAssigneeSelect.value;
         const startDate = filterStartDateInput.value;
         const endDate = filterEndDateInput.value;
 
-        if (selectedStatus !== "all") {
-            q = query(q, where("status", "==", selectedStatus));
-        }
-        if (selectedAssignee !== "all") {
-            q = query(q, where("assignee", "==", selectedAssignee));
-        }
-        if (startDate) {
-            q = query(q, where("deadline", ">=", new Date(`${startDate}T00:00:00`)));
-        }
-        if (endDate) {
-            q = query(q, where("deadline", "<=", new Date(`${endDate}T23:59:59`)));
-        }
+        if (selectedStatus !== "all") q = query(q, where("status", "==", selectedStatus));
+        if (selectedAssignee !== "all") q = query(q, where("assignee", "==", selectedAssignee));
+        if (startDate) q = query(q, where("deadline", ">=", new Date(`${startDate}T00:00:00`)));
+        if (endDate) q = query(q, where("deadline", "<=", new Date(`${endDate}T23:59:59`)));
 
-        // Configurar novo listener
         tasksListenerUnsubscribe = onSnapshot(q, 
             (snapshot) => {
                 tasksTableBody.innerHTML = '';
                 
                 if (snapshot.empty) {
-                    tasksTableBody.innerHTML = '<tr><td colspan="9">Nenhuma tarefa encontrada.</td></tr>';
+                    tasksTableBody.innerHTML = '<tr><td colspan="10">Nenhuma tarefa encontrada.</td></tr>';
                     return;
                 }
 
@@ -428,39 +393,31 @@ function subscribeAndApplyFilters() {
                     try {
                         const task = { 
                             id: doc.id,
-                            ...doc.data(),
-                            // Garantir valores padrão
                             description: doc.data().description || '',
                             type: doc.data().type || '',
-                            status: doc.data().status || 'Não Iniciado'
+                            seiProcess: doc.data().seiProcess || '',
+                            assignee: doc.data().assignee || '',
+                            deadline: doc.data().deadline || null,
+                            priority: doc.data().priority || '',
+                            observations: doc.data().observations || '',
+                            status: doc.data().status || 'Não Iniciado',
+                            userId: doc.data().userId || '',
+                            createdBy: doc.data().createdBy || 'Sistema'
                         };
                         renderTask(task);
                     } catch (error) {
-                        console.error("Erro ao processar documento:", doc.id, error);
+                        console.error("Erro ao processar documento:", error);
                     }
                 });
             },
             (error) => {
-                console.error("Erro na consulta:", {
-                    error: error,
-                    currentUserId: currentUserId,
-                    filters: {
-                        status: filterStatusSelect.value,
-                        assignee: filterAssigneeSelect.value,
-                        dates: {
-                            start: filterStartDateInput.value,
-                            end: filterEndDateInput.value
-                        }
-                    }
-                });
-                
-                tasksTableBody.innerHTML = '<tr><td colspan="9">Erro ao carregar tarefas.</td></tr>';
+                console.error("Erro na consulta:", error);
+                tasksTableBody.innerHTML = '<tr><td colspan="10">Erro ao carregar tarefas.</td></tr>';
                 showMessage('Erro ao carregar tarefas. Verifique o console.', true);
             }
         );
     } catch (error) {
         console.error("Erro ao configurar filtros:", error);
-        tasksTableBody.innerHTML = '<tr><td colspan="9">Erro na configuração dos filtros.</td></tr>';
         showMessage('Erro na configuração dos filtros', true);
     }
 }
@@ -472,7 +429,6 @@ function unsubscribeFromTasks() {
     }
 }
 
-// Event listeners para filtros
 resetFiltersBtn.addEventListener('click', () => {
     filterStatusSelect.value = "all";
     filterAssigneeSelect.value = "all";
@@ -487,21 +443,10 @@ filterAssigneeSelect.addEventListener('change', subscribeAndApplyFilters);
 filterStartDateInput.addEventListener('change', subscribeAndApplyFilters);
 filterEndDateInput.addEventListener('change', subscribeAndApplyFilters);
 
-// Teste de conexão inicial
-async function testFirestoreConnection() {
-    try {
-        const testDoc = await getDoc(doc(db, "test", "test"));
-        console.log("Conexão com Firestore OK");
-        return true;
-    } catch (error) {
-        console.error("Falha na conexão com Firestore:", error);
-        showMessage('Erro de conexão com o banco de dados', true);
-        return false;
-    }
-}
-
-// Inicialização
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log("Aplicativo iniciado");
-    await testFirestoreConnection();
+// ----------------------------------------------------
+// 8. Inicialização
+// ----------------------------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("Aplicativo carregado!");
+    subscribeAndApplyFilters();
 });
