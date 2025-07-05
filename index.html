@@ -5,61 +5,93 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Tarefas - UESC</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Estilos para o botão de cancelar edição */
+        #cancel-edit-btn {
+            background-color: #f44336;
+            color: white;
+            margin-left: 10px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        /* Mensagens de feedback */
+        .flash-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            color: white;
+            border-radius: 5px;
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+        
+        .flash-success {
+            background-color: #4CAF50;
+        }
+        
+        .flash-error {
+            background-color: #f44336;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
 <body>
     <header>
         <h1>Sistema de Gestão de Tarefas - Colegiado de Ciências Econômicas</h1>
     </header>
 
+    <section id="auth-section">
+        <div id="logged-out-view">
+            <h2>Bem-vindo! Faça Login ou Cadastre-se</h2>
 
-<section id="auth-section">
-    <div id="logged-out-view">
-        <h2>Bem-vindo! Faça Login ou Cadastre-se</h2>
+            <div class="auth-forms-wrapper">
+                <div class="auth-form">
+                    <h3>Login</h3>
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label for="login-email">Email:</label>
+                            <input type="email" id="login-email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">Senha:</label>
+                            <input type="password" id="login-password" required>
+                        </div>
+                        <button type="submit">Entrar</button>
+                        <p id="login-error" class="error-message"></p>
+                    </form>
+                </div>
 
-        <div class="auth-forms-wrapper"> <!-- NOVO CONTAINER AQUI! -->
-            <div class="auth-form">
-                <h3>Login</h3>
-                <form id="login-form">
-                    <div class="form-group">
-                        <label for="login-email">Email:</label>
-                        <input type="email" id="login-email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="login-password">Senha:</label>
-                        <input type="password" id="login-password" required>
-                    </div>
-                    <button type="submit">Entrar</button>
-                    <p id="login-error" class="error-message"></p>
-                </form>
+                <div class="auth-form">
+                    <h3>Cadastre-se</h3>
+                    <form id="signup-form">
+                        <div class="form-group">
+                            <label for="signup-email">Email:</label>
+                            <input type="email" id="signup-email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="signup-password">Senha:</label>
+                            <input type="password" id="signup-password" required>
+                        </div>
+                        <button type="submit">Cadastrar</button>
+                        <p id="signup-error" class="error-message"></p>
+                    </form>
+                </div>
             </div>
+        </div>
 
-            <div class="auth-form">
-                <h3>Cadastre-se</h3>
-                <form id="signup-form">
-                    <div class="form-group">
-                        <label for="signup-email">Email:</label>
-                        <input type="email" id="signup-email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="signup-password">Senha:</label>
-                        <input type="password" id="signup-password" required>
-                    </div>
-                    <button type="submit">Cadastrar</button>
-                    <p id="signup-error" class="error-message"></p>
-                </form>
-            </div>
-        </div> <!-- FIM DO NOVO CONTAINER -->
-
-    </div>
-
-    <div id="logged-in-view" style="display: none;">
-        <p>Logado como: <span id="user-email-display"></span></p>
-        <button id="logout-button">Sair</button>
-    </div>
-</section>
-
-
-
+        <div id="logged-in-view" style="display: none;">
+            <p>Logado como: <span id="user-email-display"></span></p>
+            <button id="logout-button">Sair</button>
+        </div>
+    </section>
 
     <main>
         <section id="cadastro-tarefa">
@@ -130,7 +162,10 @@
                     </select>
                 </div>
 
-                <button type="submit">Salvar Tarefa</button>
+                <div class="form-group">
+                    <button type="submit">Salvar Tarefa</button>
+                    <button type="button" id="cancel-edit-btn" style="display: none;">Cancelar Edição</button>
+                </div>
             </form>
         </section>
 
@@ -151,12 +186,13 @@
                     <option value="all">Todos</option>
                 </select>
 
-                <!-- NOVOS FILTROS DE PERÍODO -->
                 <label for="filter-start-date">De:</label>
                 <input type="date" id="filter-start-date">
 
                 <label for="filter-end-date">Até:</label>
                 <input type="date" id="filter-end-date">
+
+                <button id="reset-filters-btn">Limpar Filtros</button>
             </div>
             
             <div class="task-list-container">
@@ -175,7 +211,9 @@
                         </tr>
                     </thead>
                     <tbody id="tasks-table-body">
-                        <!-- Tarefas serão inseridas aqui pelo JavaScript -->
+                        <tr>
+                            <td colspan="9">Faça login para ver e gerenciar tarefas.</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -183,7 +221,9 @@
 
         <section id="painel-resumo">
             <h2>Painel de Resumo</h2>
-            <p>Resumo das tarefas por tipo, colaborador e status aparecerá aqui.</p>
+            <div id="summary-content">
+                <p>Resumo das tarefas por tipo, colaborador e status aparecerá aqui.</p>
+            </div>
         </section>
     </main>
 
