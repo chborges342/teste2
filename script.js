@@ -436,66 +436,6 @@ filterStartDateInput.addEventListener('change', applyFilters);
 filterEndDateInput.addEventListener('change', applyFilters);
 
 
-function applyFilters() {
-    const selectedStatus = filterStatusSelect.value;
-    const selectedAssignee = filterAssigneeSelect.value;
-    // Obtém os valores das datas de início e fim
-    const startDateValue = filterStartDateInput.value;
-    const endDateValue = filterEndDateInput.value;
-
-    let tasksRef = collection(db, "tarefas");
-    // Começa a query com ordenação, que será compatível com os filtros que vamos adicionar
-    let q = query(tasksRef, orderBy("createdAt", "desc"));
-
-    // Aplicar filtro de status
-    if (selectedStatus !== "all") {
-        q = query(q, where("status", "==", selectedStatus));
-    }
-
-    // Aplicar filtro de colaborador
-    if (selectedAssignee !== "all") {
-        q = query(q, where("assignee", "==", selectedAssignee));
-    }
-
-    // Aplicar filtro por intervalo de tempo (no campo 'deadline')
-    if (startDateValue) {
-        // Data de início (00:00:00 do dia selecionado)
-        const startDate = new Date(startDateValue + 'T00:00:00');
-        q = query(q, where("deadline", ">=", startDate));
-    }
-    if (endDateValue) {
-        // Data de fim (23:59:59 do dia selecionado)
-        const endDate = new Date(endDateValue + 'T23:59:59');
-        q = query(q, where("deadline", "<=", endDate));
-    }
-
-    // Re-escuta as tarefas com os novos filtros
-    // O 'onSnapshot' vai desinscrever o listener anterior e criar um novo
-    onSnapshot(q, (snapshot) => {
-        tasksTableBody.innerHTML = ''; // Limpa a tabela
-        snapshot.forEach((doc) => {
-            const task = { id: doc.id, ...doc.data() };
-            const deadlineDate = task.deadline ? task.deadline.toDate() : null; // Lida com possível deadline nulo
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            // Atualiza o status para "Pendente" se a data atual for maior que o prazo
-            if (deadlineDate && task.status !== "Concluído" && today > deadlineDate) {
-                task.status = "Pendente";
-                // Opcional: Atualizar o status no Firestore para "Pendente" automaticamente
-                // if (doc.data().status !== "Pendente") {
-                //    updateDoc(doc.ref, { status: "Pendente" });
-                // }
-            }
-            renderTask(task);
-        });
-    }, (error) => {
-        console.error("Erro ao aplicar filtros:", error);
-    });
-}
-
-// Inicializa os filtros ao carregar a página
-applyFilters();
 
 // ----------------------------------------------------
 // Passo 10: Painel de Resumo (Exemplo Básico)
