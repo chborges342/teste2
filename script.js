@@ -63,6 +63,135 @@ const filterEndDateInput = document.getElementById('filter-end-date');
 
 let currentUserId = null;
 
+let assigneeListenerUnsubscribe = null; // Para o listener de 'colaboradores'
+let tasksListenerUnsubscribe = null;    // Para o listener de 'tarefas' e filtros
+
+
+function subscribeAssigneeSelect() {
+    // Se já existe um listener ativo, desinscreve o antigo primeiro
+    if (assigneeListenerUnsubscribe) {
+        assigneeListenerUnsubscribe();
+    }
+
+    const collaboratorsCol = collection(db, "colaboradores");
+    assigneeListenerUnsubscribe = onSnapshot(collaboratorsCol, (snapshot) => {
+        // Limpa e popula os selects
+        taskAssigneeSelect.innerHTML = '<option value="">Selecione um colaborador</option>';
+        filterAssigneeSelect.innerHTML = '<option value="all">Todos</option>';
+        snapshot.forEach((doc) => {
+            const collaborator = doc.data();
+            const option = document.createElement('option');
+            option.value = collaborator.email;
+            option.textContent = collaborator.name || collaborator.email;
+            taskAssigneeSelect.appendChild(option);
+
+            const filterOption = document.createElement('option');
+            filterOption.value = collaborator.email;
+            filterOption.textContent = collaborator.name || collaborator.email;
+            filterAssigneeSelect.appendChild(filterOption);
+        });
+    }, (error) => {
+        console.error("Erro ao ouvir colaboradores: ", error);
+        // Opcional: Lidar com o erro na UI
+    });
+}
+
+// Função para DESATIVAR a escuta de colaboradores
+function unsubscribeAssigneeSelect() {
+    if (assigneeListenerUnsubscribe) {
+        assigneeListenerUnsubscribe(); // Chama a função de unsubscribe
+        assigneeListenerUnsubscribe = null; // Zera a variável para indicar que não há listener ativo
+        // Opcional: limpa os selects quando desloga
+        taskAssigneeSelect.innerHTML = '<option value="">Selecione um colaborador</option>';
+        filterAssigneeSelect.innerHTML = '<option value="all">Todos</option>';
+    }
+}
+
+// Esta função agora será responsável por ATIVAR e gerenciar o listener de tarefas,
+// incluindo a aplicação de filtros.
+function subscribeAndApplyFilters() {
+    // Primeiro, desinscreve o listener anterior, se houver
+    if (tasksListenerUnsubscribe) {
+        tasksListenerUnsubscribe();
+        tasksListenerUnsubscribe = null; // Zera para o próximo listener
+    }
+
+    const selectedStatus = filterStatusSelect.value;
+    const selectedAssignee = filterAssigneeSelect.value;
+    const startDateValue = filterStartDateInput.value;
+    const endDateValue = filterEndDateInput.value;
+
+    let tasksRef = collection(db, "tarefas");
+    // Começa a query com ordenação padrão.
+    let q = query(tasksRef, orderBy("createdAt", "desc"));
+
+    // Aplicar filtro de status
+    if (selectedStatus !== "all") {
+        q = query(q, where("status", "==", selectedStatus));
+    }
+
+    // Aplicar filtro de colaborador
+    if (selectedAssignee !== "all") {
+        q = query(q, where("assignee", "==", selectedAssignee));
+    }
+
+    // Aplicar filtro por intervalo de tempo (no campo 'deadline')
+    if (startDateValue) {
+        const startDate = new Date(startDateValue + 'T00:00:00');
+        q = query(q, where("deadline", ">=", startDate));
+    }
+    if (endDateValue) {
+        const endDate = new Date(endDateValue + 'T23:59:59');
+        q = query(q, where("deadline", "<=", endDate));
+    }
+
+    // Cria o NOVO listener e armazena a função de unsubscribe
+    tasksListenerUnsubscribe = onSnapshot(q, (snapshot) => {
+        tasksTableBody.innerHTML = ''; // Limpa a tabela
+        if (snapshot.empty && currentUserId) { // Se não houver tarefas e o usuário estiver logado
+            tasksTableBody.innerHTML = '<tr><td colspan="9">Nenhuma tarefa encontrada com os filtros atuais.</td></tr>';
+        } else if (!currentUserId) { // Se não houver tarefas e o usuário não estiver logado (já tratado no onAuthStateChanged, mas bom para consistência)
+             tasksTableBody.innerHTML = '<tr><td colspan="9">Faça login para ver e gerenciar tarefas.</td></tr>';
+        }
+
+        snapshot.forEach((doc) => {
+            const task = { id: doc.id, ...doc.data() };
+            const deadlineDate = task.deadline ? task.deadline.toDate() : null;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            if (deadlineDate && task.status !== "Concluído" && today > deadlineDate) {
+                task.status = "Pendente";
+                // Opcional: Atualizar o status no Firestore para "Pendente" automaticamente
+                // (Isso geraria uma nova escrita no Firestore, tenha cautela com o volume)
+                // if (doc.data().status !== "Pendente") {
+                //    updateDoc(doc.ref, { status: "Pendente" });
+                // }
+            }
+            renderTask(task);
+        });
+    }, (error) => {
+        console.error("Erro ao aplicar filtros:", error);
+        tasksTableBody.innerHTML = '<tr><td colspan="9">Erro ao carregar tarefas.</td></tr>';
+    });
+}
+
+// Função para DESATIVAR a escuta de tarefas
+function unsubscribeFromTasks() {
+    if (tasksListenerUnsubscribe) {
+        tasksListenerUnsubscribe();
+        tasksListenerUnsubscribe = null; // Zera a variável
+        tasksTableBody.innerHTML = '<tr><td colspan="9">Faça login para ver e gerenciar tarefas.</td></tr>'; // Limpa e mostra mensagem padrão
+    }
+}
+
+// Adiciona event listeners para os filtros, chamando a função unificada
+filterStatusSelect.addEventListener('change', subscribeAndApplyFilters);
+filterAssigneeSelect.addEventListener('change', subscribeAndApplyFilters);
+filterStartDateInput.addEventListener('change', subscribeAndApplyFilters);
+filterEndDateInput.addEventListener('change', subscribeAndApplyFilters);
+
+
 // ----------------------------------------------------
 // Gerenciamento do Estado de Autenticação (onAuthStateChanged)
 // Este é o coração da autenticação!
@@ -71,20 +200,19 @@ onAuthStateChanged(auth, (user) => {
     if (user) {
         // Usuário está logado
         currentUserId = user.uid;
-        userEmailDisplay.textContent = user.email; // Mostra o email do usuário
+        userEmailDisplay.textContent = user.email;
         loggedInView.style.display = 'block';
         loggedOutView.style.display = 'none';
         
-        // Mostra o conteúdo principal do app (tarefas, formulário, etc.)
-        mainContent.style.display = 'block'; // Assumindo que <main> estava hidden
-        authSection.style.display = 'none'; // Oculta a seção de autenticação
+        mainContent.style.display = 'block';
+        authSection.style.display = 'none';
 
         console.log("Usuário autenticado:", user.email, user.uid);
 
-        // Chame as funções que dependem de um usuário logado
-        populateAssigneeSelect(); // Continua buscando colaboradores
-        listenForTasks(); // Começa a ouvir as tarefas
-        applyFilters(); // Aplica filtros iniciais
+        // --- ATIVA TODOS OS LISTENERS QUANDO O USUÁRIO LOGA ---
+        subscribeAssigneeSelect();   // Inicia a escuta de colaboradores
+        subscribeAndApplyFilters(); // Inicia a escuta de tarefas com os filtros atuais
+        
     } else {
         // Usuário não está logado
         currentUserId = null;
@@ -92,12 +220,17 @@ onAuthStateChanged(auth, (user) => {
         loggedInView.style.display = 'none';
         loggedOutView.style.display = 'block';
 
-        // Oculta o conteúdo principal do app e mostra a seção de autenticação
-        mainContent.style.display = 'none'; // Esconde o conteúdo principal
-        authSection.style.display = 'block'; // Mostra a seção de login/cadastro
+        mainContent.style.display = 'none';
+        authSection.style.display = 'block';
 
         console.log("Nenhum usuário logado.");
-        tasksTableBody.innerHTML = '<tr><td colspan="9">Faça login para ver e gerenciar tarefas.</td></tr>'; // Limpa tabela e avisa
+        
+        // --- DESATIVA TODOS OS LISTENERS QUANDO O USUÁRIO DESLOGA ---
+        unsubscribeAssigneeSelect(); // Para a escuta de colaboradores
+        unsubscribeFromTasks();      // Para a escuta de tarefas/filtros
+        
+        // Garante que a tabela esteja limpa e a mensagem de login apareça
+        tasksTableBody.innerHTML = '<tr><td colspan="9">Faça login para ver e gerenciar tarefas.</td></tr>';
     }
 });
 
@@ -105,32 +238,7 @@ onAuthStateChanged(auth, (user) => {
 // ----------------------------------------------------
 // Passo 4: Carregar Colaboradores (Exemplo)
 // ----------------------------------------------------
-async function populateAssigneeSelect() { // 'async' pode ser removido se não houver outros awaits
-    try {
-        const collaboratorsCol = collection(db, "colaboradores");
-        // const querySnapshot = await onSnapshot(...); // <-- Remova o 'await'
-        const unsubscribe = onSnapshot(collaboratorsCol, (snapshot) => { // 'unsubscribe' receberá a função de desinscrição
-            taskAssigneeSelect.innerHTML = '<option value="">Selecione um colaborador</option>';
-            filterAssigneeSelect.innerHTML = '<option value="all">Todos</option>';
-            snapshot.forEach((doc) => {
-                const collaborator = doc.data();
-                const option = document.createElement('option');
-                option.value = collaborator.email;
-                option.textContent = collaborator.name || collaborator.email;
-                taskAssigneeSelect.appendChild(option);
 
-                const filterOption = document.createElement('option');
-                filterOption.value = collaborator.email;
-                filterOption.textContent = collaborator.name || collaborator.email;
-                filterAssigneeSelect.appendChild(filterOption);
-            });
-        });
-        // Você pode retornar 'unsubscribe' daqui se precisar gerenciá-lo fora desta função
-        // return unsubscribe;
-    } catch (e) {
-        console.error("Erro ao carregar colaboradores: ", e);
-    }
-}
 
 // ----------------------------------------------------
 // Passo 5: Adicionar Nova Tarefa
