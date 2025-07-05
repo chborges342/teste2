@@ -141,13 +141,13 @@ th {
 }
 
 /* Larguras específicas para cada coluna */
-th:nth-child(1), td:nth-child(1) { width: 20%; } /* Descrição */
+th:nth-child(1), td:nth-child(1) { width: 10%; } /* Descrição */
 th:nth-child(2), td:nth-child(2) { width: 10%; } /* Tipo */
-th:nth-child(3), td:nth-child(3) { width: 25%; } /* Processo SEI */
+th:nth-child(3), td:nth-child(3) { width: 10%; } /* Processo SEI */
 th:nth-child(4), td:nth-child(4) { width: 10%; } /* Colaborador */
 th:nth-child(5), td:nth-child(5) { width: 10%; } /* Prazo */
 th:nth-child(6), td:nth-child(6) { width: 8%; }  /* Prioridade */
-th:nth-child(7), td:nth-child(7) { width: 15%; } /* Observações */
+th:nth-child(7), td:nth-child(7) { width: 10%; } /* Observações */
 th:nth-child(8), td:nth-child(8) { width: 10%; } /* Status */
 th:nth-child(9), td:nth-child(9) { width: 5%; }  /* Ações */
 
