@@ -99,6 +99,17 @@ function escapeHtml(str) {
         .replace(/'/g, '&#39;');
 }
 
+function toUTCDate(dateString, endOfDay = false) {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    if (endOfDay) {
+        date.setUTCHours(23, 59, 59, 999);
+    } else {
+        date.setUTCHours(0, 0, 0, 0);
+    }
+    return date;
+}
+
 // ----------------------------------------------------
 // 4. Autenticação
 // ----------------------------------------------------
