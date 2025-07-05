@@ -294,35 +294,6 @@ const addTaskHandler = async (e) => {
 // ----------------------------------------------------
 // Passo 6: Listar e Atualizar Tarefas em Tempo Real
 // ----------------------------------------------------
-function listenForTasks() {
-    let tasksRef = collection(db, "tarefas");
-    let q = query(tasksRef, orderBy("createdAt", "desc")); // Ordena as tarefas
-
-    onSnapshot(q, (snapshot) => {
-        tasksTableBody.innerHTML = ''; // Limpa a tabela antes de adicionar as novas tarefas
-        snapshot.forEach((doc) => {
-            const task = { id: doc.id, ...doc.data() };
-            // Atualiza o status para "Pendente" se a data atual for maior que o prazo
-            const deadlineDate = task.deadline.toDate(); // Converte Timestamp para Date
-            const today = new Date();
-            today.setHours(0, 0, 0, 0); // Zera hora para comparar apenas a data
-
-            if (task.status !== "Concluído" && today > deadlineDate) {
-                task.status = "Pendente";
-                // Opcional: Atualizar o status no Firestore para "Pendente" automaticamente
-                // if (doc.data().status !== "Pendente") { // Evita escritas desnecessárias
-                //    updateDoc(doc.ref, { status: "Pendente" });
-                // }
-            }
-            renderTask(task);
-        });
-    }, (error) => {
-        console.error("Erro ao ouvir tarefas:", error);
-    });
-}
-
-// Chama a função para começar a ouvir as tarefas
-listenForTasks();
 
 
 // ----------------------------------------------------
