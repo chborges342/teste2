@@ -1,10 +1,7 @@
 // script.js
 
 // ----------------------------------------------------
-// Passo 1: Configuração e Inicialização do Firebase
-// Lembre-se de substituir os valores pelos do seu projeto Firebase!
-// Você pode encontrar esses valores no Console do Firebase:
-// Configurações do Projeto -> Seus apps -> Adicionar aplicativo
+// 1. Configuração do Firebase (substitua pelos seus dados)
 // ----------------------------------------------------
 const firebaseConfig = {
     apiKey: "AIzaSyASeIQJoEC5FmH3N85uf0O93ngYxvFS-T8",
@@ -15,27 +12,26 @@ const firebaseConfig = {
     appId: "1:425723057663:web:c2e145985690b8c24fc3ca"
 };
 
-// Importar os serviços do Firebase que vamos usar
-// Atenção: Atualizei as versões do SDK para 11.10.0 para corresponder ao seu snippet!
+// Importações do Firebase (SDK v11.10.0)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, where, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
 
-
-// Inicializar o Firebase
+// Inicialização do Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth(app); // Importado mas não usado ativamente no exemplo do CRUD de tarefas
+const auth = getAuth(app);
 
 // ----------------------------------------------------
-// Passo 2: Referências aos Elementos HTML
+// 2. Referências aos Elementos HTML
 // ----------------------------------------------------
+// Views
 const loggedOutView = document.getElementById('logged-out-view');
 const loggedInView = document.getElementById('logged-in-view');
 const userEmailDisplay = document.getElementById('user-email-display');
 const logoutButton = document.getElementById('logout-button');
 
-// Formulários e Inputs
+// Formulários de Autenticação
 const loginForm = document.getElementById('login-form');
 const loginEmailInput = document.getElementById('login-email');
 const loginPasswordInput = document.getElementById('login-password');
@@ -46,463 +42,341 @@ const signupEmailInput = document.getElementById('signup-email');
 const signupPasswordInput = document.getElementById('signup-password');
 const signupErrorDisplay = document.getElementById('signup-error');
 
-// Referências às seções principais do app, para mostrar/esconder
-const authSection = document.getElementById('auth-section');
-const mainContent = document.querySelector('main'); // Referência à sua tag <main>
-
-
-// ... (suas referências existentes de taskForm, tasksTableBody, etc.) ...
+// Tarefas
 const taskForm = document.getElementById('task-form');
 const tasksTableBody = document.getElementById('tasks-table-body');
+const cancelEditBtn = document.getElementById('cancel-edit-btn');
+
+// Filtros
 const taskAssigneeSelect = document.getElementById('task-assignee');
 const filterStatusSelect = document.getElementById('filter-status');
 const filterAssigneeSelect = document.getElementById('filter-assignee');
-const taskSeiProcessInput = document.getElementById('task-sei-process');
 const filterStartDateInput = document.getElementById('filter-start-date');
 const filterEndDateInput = document.getElementById('filter-end-date');
+const resetFiltersBtn = document.getElementById('reset-filters-btn');
 
+// Variáveis de Estado
 let currentUserId = null;
+let assigneeListenerUnsubscribe = null;
+let tasksListenerUnsubscribe = null;
 
-let assigneeListenerUnsubscribe = null; // Para o listener de 'colaboradores'
-let tasksListenerUnsubscribe = null;    // Para o listener de 'tarefas' e filtros
+// ----------------------------------------------------
+// 3. Autenticação (Login, Cadastro, Logout)
+// ----------------------------------------------------
+// Login
+loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = loginEmailInput.value;
+    const password = loginPasswordInput.value;
 
-
-function subscribeAssigneeSelect() {
-    // Se já existe um listener ativo, desinscreve o antigo primeiro
-    if (assigneeListenerUnsubscribe) {
-        assigneeListenerUnsubscribe();
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+        loginErrorDisplay.textContent = '';
+        showMessage('Login realizado com sucesso!');
+    } catch (error) {
+        console.error("Erro no login:", error);
+        loginErrorDisplay.textContent = "E-mail ou senha inválidos.";
+        showMessage('Erro no login: ' + error.message, true);
     }
+});
+
+// Cadastro
+signupForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = signupEmailInput.value;
+    const password = signupPasswordInput.value;
+
+    try {
+        await createUserWithEmailAndPassword(auth, email, password);
+        signupErrorDisplay.textContent = '';
+        showMessage('Cadastro realizado com sucesso!');
+    } catch (error) {
+        console.error("Erro no cadastro:", error);
+        signupErrorDisplay.textContent = error.message;
+        showMessage('Erro no cadastro: ' + error.message, true);
+    }
+});
+
+// Logout
+logoutButton.addEventListener('click', () => {
+    signOut(auth).then(() => {
+        showMessage('Logout realizado com sucesso!');
+    }).catch((error) => {
+        console.error("Erro ao fazer logout:", error);
+        showMessage('Erro ao fazer logout', true);
+    });
+});
+
+// ----------------------------------------------------
+// 4. Gerenciamento de Estado de Autenticação
+// ----------------------------------------------------
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        // Usuário logado
+        currentUserId = user.uid;
+        userEmailDisplay.textContent = user.email;
+        loggedInView.style.display = 'block';
+        loggedOutView.style.display = 'none';
+        document.querySelector('main').style.display = 'block';
+        document.getElementById('auth-section').style.display = 'none';
+
+        // Inicia listeners
+        subscribeAssigneeSelect();
+        subscribeAndApplyFilters();
+    } else {
+        // Usuário deslogado
+        currentUserId = null;
+        userEmailDisplay.textContent = '';
+        loggedInView.style.display = 'none';
+        loggedOutView.style.display = 'block';
+        document.querySelector('main').style.display = 'none';
+        document.getElementById('auth-section').style.display = 'block';
+
+        // Remove listeners
+        unsubscribeAssigneeSelect();
+        unsubscribeFromTasks();
+        tasksTableBody.innerHTML = '<tr><td colspan="9">Faça login para ver e gerenciar tarefas.</td></tr>';
+    }
+});
+
+// ----------------------------------------------------
+// 5. Gerenciamento de Colaboradores
+// ----------------------------------------------------
+function subscribeAssigneeSelect() {
+    if (assigneeListenerUnsubscribe) assigneeListenerUnsubscribe();
 
     const collaboratorsCol = collection(db, "colaboradores");
     assigneeListenerUnsubscribe = onSnapshot(collaboratorsCol, (snapshot) => {
-        // Limpa e popula os selects
         taskAssigneeSelect.innerHTML = '<option value="">Selecione um colaborador</option>';
         filterAssigneeSelect.innerHTML = '<option value="all">Todos</option>';
+        
         snapshot.forEach((doc) => {
             const collaborator = doc.data();
             const option = document.createElement('option');
             option.value = collaborator.email;
             option.textContent = collaborator.name || collaborator.email;
-            taskAssigneeSelect.appendChild(option);
-
-            const filterOption = document.createElement('option');
-            filterOption.value = collaborator.email;
-            filterOption.textContent = collaborator.name || collaborator.email;
-            filterAssigneeSelect.appendChild(filterOption);
+            taskAssigneeSelect.appendChild(option.cloneNode(true));
+            filterAssigneeSelect.appendChild(option);
         });
     }, (error) => {
-        console.error("Erro ao ouvir colaboradores: ", error);
-        // Opcional: Lidar com o erro na UI
+        console.error("Erro ao carregar colaboradores:", error);
+        showMessage('Erro ao carregar colaboradores', true);
     });
 }
 
-// Função para DESATIVAR a escuta de colaboradores
 function unsubscribeAssigneeSelect() {
     if (assigneeListenerUnsubscribe) {
-        assigneeListenerUnsubscribe(); // Chama a função de unsubscribe
-        assigneeListenerUnsubscribe = null; // Zera a variável para indicar que não há listener ativo
-        // Opcional: limpa os selects quando desloga
-        taskAssigneeSelect.innerHTML = '<option value="">Selecione um colaborador</option>';
-        filterAssigneeSelect.innerHTML = '<option value="all">Todos</option>';
+        assigneeListenerUnsubscribe();
+        assigneeListenerUnsubscribe = null;
     }
 }
 
-// Esta função agora será responsável por ATIVAR e gerenciar o listener de tarefas,
-// incluindo a aplicação de filtros.
-function subscribeAndApplyFilters() {
-    // Primeiro, desinscreve o listener anterior, se houver
-    if (tasksListenerUnsubscribe) {
-        tasksListenerUnsubscribe();
-        tasksListenerUnsubscribe = null; // Zera para o próximo listener
+// ----------------------------------------------------
+// 6. Gerenciamento de Tarefas (CRUD)
+// ----------------------------------------------------
+// Adicionar/Editar Tarefa
+taskForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    // Validação
+    const description = document.getElementById('task-description').value;
+    const deadline = document.getElementById('task-deadline').value;
+    if (!description || !deadline) {
+        showMessage('Descrição e prazo são obrigatórios!', true);
+        return;
     }
 
-    const selectedStatus = filterStatusSelect.value;
-    const selectedAssignee = filterAssigneeSelect.value;
-    const startDateValue = filterStartDateInput.value;
-    const endDateValue = filterEndDateInput.value;
+    const submitButton = e.target.querySelector('button[type="submit"]');
+    const isEditMode = submitButton.textContent.includes("Atualizar");
 
-    let tasksRef = collection(db, "tarefas");
-    // Começa a query com ordenação padrão.
-    let q = query(tasksRef, orderBy("createdAt", "desc"));
+    const taskData = {
+        description: description,
+        type: document.getElementById('task-type').value,
+        seiProcess: document.getElementById('task-sei-process').value,
+        assignee: taskAssigneeSelect.value,
+        deadline: new Date(`${deadline}T23:59:59`),
+        priority: document.getElementById('task-priority').value,
+        observations: document.getElementById('task-observations').value,
+        status: document.getElementById('task-status').value,
+        createdAt: new Date(),
+        userId: currentUserId // Adiciona o ID do usuário criador
+    };
 
-    // Aplicar filtro de status
-    if (selectedStatus !== "all") {
-        q = query(q, where("status", "==", selectedStatus));
-    }
-
-    // Aplicar filtro de colaborador
-    if (selectedAssignee !== "all") {
-        q = query(q, where("assignee", "==", selectedAssignee));
-    }
-
-    // Aplicar filtro por intervalo de tempo (no campo 'deadline')
-    if (startDateValue) {
-        const startDate = new Date(startDateValue + 'T00:00:00');
-        q = query(q, where("deadline", ">=", startDate));
-    }
-    if (endDateValue) {
-        const endDate = new Date(endDateValue + 'T23:59:59');
-        q = query(q, where("deadline", "<=", endDate));
-    }
-
-    // Cria o NOVO listener e armazena a função de unsubscribe
-    tasksListenerUnsubscribe = onSnapshot(q, (snapshot) => {
-        tasksTableBody.innerHTML = ''; // Limpa a tabela
-        if (snapshot.empty && currentUserId) { // Se não houver tarefas e o usuário estiver logado
-            tasksTableBody.innerHTML = '<tr><td colspan="9">Nenhuma tarefa encontrada com os filtros atuais.</td></tr>';
-        } else if (!currentUserId) { // Se não houver tarefas e o usuário não estiver logado (já tratado no onAuthStateChanged, mas bom para consistência)
-             tasksTableBody.innerHTML = '<tr><td colspan="9">Faça login para ver e gerenciar tarefas.</td></tr>';
+    try {
+        if (isEditMode) {
+            await updateDoc(doc(db, "tarefas", submitButton.dataset.taskId), taskData);
+            showMessage('Tarefa atualizada com sucesso!');
+        } else {
+            await addDoc(collection(db, "tarefas"), taskData);
+            showMessage('Tarefa adicionada com sucesso!');
         }
-
-        snapshot.forEach((doc) => {
-            const task = { id: doc.id, ...doc.data() };
-            const deadlineDate = task.deadline ? task.deadline.toDate() : null;
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            if (deadlineDate && task.status !== "Concluído" && today > deadlineDate) {
-                task.status = "Pendente";
-                // Opcional: Atualizar o status no Firestore para "Pendente" automaticamente
-                // (Isso geraria uma nova escrita no Firestore, tenha cautela com o volume)
-                // if (doc.data().status !== "Pendente") {
-                //    updateDoc(doc.ref, { status: "Pendente" });
-                // }
-            }
-            renderTask(task);
-        });
-    }, (error) => {
-        console.error("Erro ao aplicar filtros:", error);
-        tasksTableBody.innerHTML = '<tr><td colspan="9">Erro ao carregar tarefas.</td></tr>';
-    });
-}
-
-// Função para DESATIVAR a escuta de tarefas
-function unsubscribeFromTasks() {
-    if (tasksListenerUnsubscribe) {
-        tasksListenerUnsubscribe();
-        tasksListenerUnsubscribe = null; // Zera a variável
-        tasksTableBody.innerHTML = '<tr><td colspan="9">Faça login para ver e gerenciar tarefas.</td></tr>'; // Limpa e mostra mensagem padrão
-    }
-}
-
-// Adiciona event listeners para os filtros, chamando a função unificada
-filterStatusSelect.addEventListener('change', subscribeAndApplyFilters);
-filterAssigneeSelect.addEventListener('change', subscribeAndApplyFilters);
-filterStartDateInput.addEventListener('change', subscribeAndApplyFilters);
-filterEndDateInput.addEventListener('change', subscribeAndApplyFilters);
-
-
-// ----------------------------------------------------
-// Gerenciamento do Estado de Autenticação (onAuthStateChanged)
-// Este é o coração da autenticação!
-// ----------------------------------------------------
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        // Usuário está logado
-        currentUserId = user.uid;
-        userEmailDisplay.textContent = user.email;
-        loggedInView.style.display = 'block';
-        loggedOutView.style.display = 'none';
         
-        mainContent.style.display = 'block';
-        authSection.style.display = 'none';
-
-        console.log("Usuário autenticado:", user.email, user.uid);
-
-        // --- ATIVA TODOS OS LISTENERS QUANDO O USUÁRIO LOGA ---
-        subscribeAssigneeSelect();   // Inicia a escuta de colaboradores
-        subscribeAndApplyFilters(); // Inicia a escuta de tarefas com os filtros atuais
-        
-    } else {
-        // Usuário não está logado
-        currentUserId = null;
-        userEmailDisplay.textContent = '';
-        loggedInView.style.display = 'none';
-        loggedOutView.style.display = 'block';
-
-        mainContent.style.display = 'none';
-        authSection.style.display = 'block';
-
-        console.log("Nenhum usuário logado.");
-        
-        // --- DESATIVA TODOS OS LISTENERS QUANDO O USUÁRIO DESLOGA ---
-        unsubscribeAssigneeSelect(); // Para a escuta de colaboradores
-        unsubscribeFromTasks();      // Para a escuta de tarefas/filtros
-        
-        // Garante que a tabela esteja limpa e a mensagem de login apareça
-        tasksTableBody.innerHTML = '<tr><td colspan="9">Faça login para ver e gerenciar tarefas.</td></tr>';
+        taskForm.reset();
+        submitButton.textContent = "Salvar Tarefa";
+        delete submitButton.dataset.taskId;
+        cancelEditBtn.style.display = 'none';
+    } catch (error) {
+        console.error("Erro ao salvar tarefa:", error);
+        showMessage('Erro ao salvar tarefa: ' + error.message, true);
     }
 });
 
+// Cancelar Edição
+cancelEditBtn.addEventListener('click', () => {
+    taskForm.reset();
+    cancelEditBtn.style.display = 'none';
+    taskForm.querySelector('button[type="submit"]').textContent = "Salvar Tarefa";
+    delete taskForm.querySelector('button[type="submit"]').dataset.taskId;
+});
 
-// ----------------------------------------------------
-// Passo 4: Carregar Colaboradores (Exemplo)
-// ----------------------------------------------------
-
-
-// ----------------------------------------------------
-// Passo 5: Adicionar Nova Tarefa
-// ----------------------------------------------------
-// Handler para adicionar tarefa (atualizado)
-const addTaskHandler = async (e) => {
-    e.preventDefault();
-
-    const description = document.getElementById('task-description').value;
-    const type = document.getElementById('task-type').value;
-    // NOVO: Obter o valor do campo Processo SEI
-    const seiProcess = taskSeiProcessInput.value;
-    const assigneeEmail = taskAssigneeSelect.value;
-    const deadline = document.getElementById('task-deadline').value;
-    const priority = document.getElementById('task-priority').value;
-    const observations = document.getElementById('task-observations').value;
-    const status = document.getElementById('task-status').value;
-
-    try {
-        const docRef = await addDoc(collection(db, "tarefas"), {
-            description: description,
-            type: type,
-            seiProcess: seiProcess, // NOVO: Salvar o Processo SEI
-            assignee: assigneeEmail,
-            deadline: new Date(deadline + 'T23:59:59'),
-            priority: priority,
-            observations: observations,
-            status: status,
-            createdAt: new Date(),
-        });
-        console.log("Documento escrito com ID: ", docRef.id);
-        taskForm.reset();
-        // ----------------------------------------------------
-        // Lógica de Envio de E-mail (Importante!)
-        // ----------------------------------------------------
-        // Para enviar e-mails de forma segura, você precisará de uma Cloud Function.
-        // A Cloud Function seria acionada automaticamente por uma nova tarefa no Firestore
-        // (usando um trigger onWrite) ou você pode chamá-la diretamente (Callable Function).
-        // A chamada direta seria algo como:
-        // const sendEmail = httpsCallable(functions, 'sendTaskAssignmentEmail');
-        // sendEmail({ taskId: docRef.id, assigneeEmail: assigneeEmail, description: description });
-        // Lembre-se que para funções que fazem requisições externas (como envio de email),
-        // seu projeto no Firebase Spark precisaria ser atualizado para o plano Blaze
-        // (mesmo que seja no-cost dentro dos limites), pois ele permite chamadas de rede externas.
-        // ----------------------------------------------------
-
-      } catch (e) {
-        console.error("Erro ao adicionar documento: ", e);
-    }
-};
-
-
-// ----------------------------------------------------
-// Passo 6: Listar e Atualizar Tarefas em Tempo Real
-// ----------------------------------------------------
-
-
-// ----------------------------------------------------
-// Passo 7: Renderizar uma Tarefa na Tabela
-// ----------------------------------------------------
+// Renderizar Tarefa
 function renderTask(task) {
     const row = tasksTableBody.insertRow();
-    row.setAttribute('data-id', task.id); // Armazena o ID do documento na linha
-
-    // Formatação da data
-    const deadlineFormatted = task.deadline ? task.deadline.toDate().toLocaleDateString('pt-BR') : 'N/A';
-
-    // Conteúdo da linha da tabela (ATUALIZADO para incluir Processo SEI e Observações)
+    row.setAttribute('data-id', task.id);
     row.innerHTML = `
         <td>${task.description}</td>
         <td>${task.type}</td>
-        <td>${task.seiProcess || ''}</td> <!-- Exibe Processo SEI, vazio se não houver -->
+        <td>${task.seiProcess || ''}</td>
         <td>${task.assignee}</td>
-        <td>${deadlineFormatted}</td>
+        <td>${task.deadline?.toDate().toLocaleDateString('pt-BR') || 'N/A'}</td>
         <td>${task.priority}</td>
-        <td>${task.observations || ''}</td> <!-- Exibe Observações, vazio se não houver -->
-        <td><span class="status status-${task.status.replace(/\s/g, '-')}" data-task-status="${task.status}">${task.status}</span></td>
+        <td>${task.observations || ''}</td>
+        <td><span class="status status-${task.status.replace(/\s/g, '-')}">${task.status}</span></td>
         <td class="action-buttons">
             <button class="edit-btn" data-id="${task.id}">✏️</button>
             <button class="delete-btn" data-id="${task.id}">🗑️</button>
         </td>
     `;
 
-    // Adiciona event listeners para os botões de editar e excluir
-    row.querySelector('.edit-btn').addEventListener('click', (e) => editTask(e.target.dataset.id));
-    row.querySelector('.delete-btn').addEventListener('click', (e) => deleteTask(e.target.dataset.id));
+    row.querySelector('.edit-btn').addEventListener('click', () => editTask(task.id));
+    row.querySelector('.delete-btn').addEventListener('click', () => deleteTask(task.id));
 }
-// ... (código anterior do script.js)
 
-// ----------------------------------------------------
-// Passo 8: Editar e Excluir Tarefas (Continuação)
-// ----------------------------------------------------
+// Editar Tarefa
 async function editTask(id) {
-    console.log("Editar tarefa com ID:", id);
-    const taskDocRef = doc(db, "tarefas", id);
-
     try {
-        const taskSnapshot = await getDoc(taskDocRef);
-        if (taskSnapshot.exists()) {
-            const taskData = taskSnapshot.data();
-            // Preencher o formulário com os dados da tarefa para edição
-            document.getElementById('task-description').value = taskData.description;
-            document.getElementById('task-type').value = taskData.type;
-            // NOVO: Preencher o campo Processo SEI
-            taskSeiProcessInput.value = taskData.seiProcess || '';
-            taskAssigneeSelect.value = taskData.assignee;
-            document.getElementById('task-deadline').value = taskData.deadline.toDate().toISOString().split('T')[0];
-            document.getElementById('task-priority').value = taskData.priority;
-            document.getElementById('task-observations').value = taskData.observations;
-            document.getElementById('task-status').value = taskData.status;
+        const taskDoc = await getDoc(doc(db, "tarefas", id));
+        if (!taskDoc.exists()) return;
 
-            const submitButton = taskForm.querySelector('button[type="submit"]');
-            submitButton.textContent = "Atualizar Tarefa";
-            submitButton.dataset.taskId = id;
+        const taskData = taskDoc.data();
+        document.getElementById('task-description').value = taskData.description;
+        document.getElementById('task-type').value = taskData.type;
+        document.getElementById('task-sei-process').value = taskData.seiProcess || '';
+        taskAssigneeSelect.value = taskData.assignee;
+        document.getElementById('task-deadline').value = taskData.deadline.toDate().toISOString().split('T')[0];
+        document.getElementById('task-priority').value = taskData.priority;
+        document.getElementById('task-observations').value = taskData.observations;
+        document.getElementById('task-status').value = taskData.status;
 
-            taskForm.removeEventListener('submit', addTaskHandler);
-            taskForm.addEventListener('submit', updateTaskHandler);
-
-            document.getElementById('cadastro-tarefa').scrollIntoView({ behavior: 'smooth' });
-
-        } else {
-            console.log("Tarefa não encontrada para edição!");
-        }
-    } catch (e) {
-        console.error("Erro ao carregar tarefa para edição:", e);
-    }
-}
-
-// Handler para atualizar tarefa (atualizado)
-const updateTaskHandler = async (e) => {
-    e.preventDefault();
-    const taskId = e.target.querySelector('button[type="submit"]').dataset.taskId;
-    const taskDocRef = doc(db, "tarefas", taskId);
-
-    const description = document.getElementById('task-description').value;
-    const type = document.getElementById('task-type').value;
-    // NOVO: Obter o valor do campo Processo SEI para atualização
-    const seiProcess = taskSeiProcessInput.value;
-    const assigneeEmail = taskAssigneeSelect.value;
-    const deadline = document.getElementById('task-deadline').value;
-    const priority = document.getElementById('task-priority').value;
-    const observations = document.getElementById('task-observations').value;
-    const status = document.getElementById('task-status').value;
-
-    try {
-        await updateDoc(taskDocRef, {
-            description: description,
-            type: type,
-            seiProcess: seiProcess, // NOVO: Salvar o Processo SEI atualizado
-            assignee: assigneeEmail,
-            deadline: new Date(deadline + 'T23:59:59'),
-            priority: priority,
-            observations: observations,
-            status: status,
-        });
-        console.log("Tarefa atualizada com sucesso!");
-        taskForm.reset();
         const submitButton = taskForm.querySelector('button[type="submit"]');
-        submitButton.textContent = "Salvar Tarefa";
-        delete submitButton.dataset.taskId;
-
-        taskForm.removeEventListener('submit', updateTaskHandler);
-        taskForm.addEventListener('submit', addTaskHandler);
-
-    } catch (e) {
-        console.error("Erro ao atualizar tarefa:", e);
+        submitButton.textContent = "Atualizar Tarefa";
+        submitButton.dataset.taskId = id;
+        cancelEditBtn.style.display = 'block';
+        
+        document.getElementById('cadastro-tarefa').scrollIntoView({ behavior: 'smooth' });
+    } catch (error) {
+        console.error("Erro ao carregar tarefa:", error);
+        showMessage('Erro ao carregar tarefa para edição', true);
     }
-};
+}
 
-// Adiciona o listener inicial do formulário para adicionar tarefas
-taskForm.addEventListener('submit', addTaskHandler);
-
+// Excluir Tarefa
 async function deleteTask(id) {
-    console.log("Excluir tarefa com ID:", id);
-    if (confirm("Tem certeza que deseja excluir esta tarefa?")) {
-        try {
-            await deleteDoc(doc(db, "tarefas", id));
-            console.log("Tarefa excluída com sucesso!");
-        } catch (e) {
-            console.error("Erro ao excluir tarefa:", e);
-        }
+    if (!confirm("Tem certeza que deseja excluir esta tarefa?")) return;
+    try {
+        await deleteDoc(doc(db, "tarefas", id));
+        showMessage('Tarefa excluída com sucesso!');
+    } catch (error) {
+        console.error("Erro ao excluir tarefa:", error);
+        showMessage('Erro ao excluir tarefa', true);
     }
 }
 
-
 // ----------------------------------------------------
-// Passo 9: Implementar Filtros
+// 7. Filtros
 // ----------------------------------------------------
-// Passo 9: Implementar Filtros (Atualizado para intervalo de tempo)
-// ----------------------------------------------------
-filterStatusSelect.addEventListener('change', applyFilters);
-filterAssigneeSelect.addEventListener('change', applyFilters);
-// Adiciona event listeners para os novos filtros de data
-filterStartDateInput.addEventListener('change', applyFilters);
-filterEndDateInput.addEventListener('change', applyFilters);
+function subscribeAndApplyFilters() {
+    if (tasksListenerUnsubscribe) tasksListenerUnsubscribe();
 
+    const selectedStatus = filterStatusSelect.value;
+    const selectedAssignee = filterAssigneeSelect.value;
+    const startDate = filterStartDateInput.value;
+    const endDate = filterEndDateInput.value;
 
+    let q = query(
+        collection(db, "tarefas"),
+        where("userId", "==", currentUserId), // Filtra por usuário
+        orderBy("createdAt", "desc")
+    );
 
-// ----------------------------------------------------
-// Passo 10: Painel de Resumo (Exemplo Básico)
-// ----------------------------------------------------
-// Para o painel de resumo, você pode adicionar mais queries ao Firestore
-// para contar tarefas por status, tipo ou colaborador.
-// Ex:
-/*
-async function updateSummaryPanel() {
-    const tarefasSnapshot = await getDocs(collection(db, "tarefas"));
-    let statusCounts = {
-        "Não Iniciado": 0,
-        "Em Andamento": 0,
-        "Pendente": 0,
-        "Concluído": 0
-    };
-    let typeCounts = {};
-    let assigneeCounts = {};
+    if (selectedStatus !== "all") q = query(q, where("status", "==", selectedStatus));
+    if (selectedAssignee !== "all") q = query(q, where("assignee", "==", selectedAssignee));
+    if (startDate) q = query(q, where("deadline", ">=", new Date(`${startDate}T00:00:00`)));
+    if (endDate) q = query(q, where("deadline", "<=", new Date(`${endDate}T23:59:59`)));
 
-    tarefasSnapshot.forEach(doc => {
-        const task = doc.data();
-        statusCounts[task.status] = (statusCounts[task.status] || 0) + 1;
-        typeCounts[task.type] = (typeCounts[task.type] || 0) + 1;
-        assigneeCounts[task.assignee] = (assigneeCounts[task.assignee] || 0) + 1;
+    tasksListenerUnsubscribe = onSnapshot(q, (snapshot) => {
+        tasksTableBody.innerHTML = '';
+        if (snapshot.empty) {
+            tasksTableBody.innerHTML = '<tr><td colspan="9">Nenhuma tarefa encontrada.</td></tr>';
+            return;
+        }
+
+        snapshot.forEach((doc) => {
+            const task = { id: doc.id, ...doc.data() };
+            renderTask(task);
+        });
+    }, (error) => {
+        console.error("Erro ao carregar tarefas:", error);
+        showMessage('Erro ao carregar tarefas', true);
     });
-
-    const summaryPanel = document.getElementById('painel-resumo');
-    summaryPanel.innerHTML = `
-        <h2>Painel de Resumo</h2>
-        <h3>Por Status:</h3>
-        <ul>
-            ${Object.entries(statusCounts).map(([status, count]) => `<li>${status}: ${count}</li>`).join('')}
-        </ul>
-        <h3>Por Tipo:</h3>
-        <ul>
-            ${Object.entries(typeCounts).map(([type, count]) => `<li>${type}: ${count}</li>`).join('')}
-        </ul>
-        <h3>Por Colaborador:</h3>
-        <ul>
-            ${Object.entries(assigneeCounts).map(([assignee, count]) => `<li>${assignee}: ${count}</li>`).join('')}
-        </ul>
-    `;
 }
 
-// Chame updateSummaryPanel() após carregar as tarefas ou quando necessário
-// Por exemplo, no final de listenForTasks() ou quando uma tarefa é adicionada/atualizada/excluída.
-*/
+function unsubscribeFromTasks() {
+    if (tasksListenerUnsubscribe) {
+        tasksListenerUnsubscribe();
+        tasksListenerUnsubscribe = null;
+    }
+}
+
+// Resetar Filtros
+resetFiltersBtn.addEventListener('click', () => {
+    filterStatusSelect.value = "all";
+    filterAssigneeSelect.value = "all";
+    filterStartDateInput.value = "";
+    filterEndDateInput.value = "";
+    subscribeAndApplyFilters();
+    showMessage('Filtros resetados!');
+});
+
+// Event Listeners para Filtros
+filterStatusSelect.addEventListener('change', subscribeAndApplyFilters);
+filterAssigneeSelect.addEventListener('change', subscribeAndApplyFilters);
+filterStartDateInput.addEventListener('change', subscribeAndApplyFilters);
+filterEndDateInput.addEventListener('change', subscribeAndApplyFilters);
 
 // ----------------------------------------------------
-// Considerações Finais sobre o JavaScript e Firebase
+// 8. Utilitários
 // ----------------------------------------------------
-// 1. Configuração do Firebase: Lembre-se de colocar seus dados reais em `firebaseConfig`.
-// 2. Import Maps: Para usar as importações com URLs (`https://www.gstatic.com/firebasejs/...`),
-//    você pode precisar adicionar um `type="module"` na tag script no HTML (`<script type="module" src="script.js"></script>`)
-//    e/ou configurar import maps no seu HTML para um ambiente de produção para gerenciar as dependências de forma mais robusta.
-//    Para desenvolvimento local com servidores simples, `type="module"` geralmente funciona.
-// 3. Autenticação: O sistema de autenticação (usuários) precisa ser desenvolvido.
-//    O exemplo de `populateAssigneeSelect` assume uma coleção de "colaboradores" no Firestore.
-//    Para uma gestão completa de usuários com senhas e e-mails, o Firebase Authentication é o ideal.
-// 4. Cloud Functions: Para o envio de e-mails, como mencionado, é essencial usar o Cloud Functions.
-//    Você precisaria criar uma função que escuta por novas tarefas ou alterações e envia o e-mail.
-//    Isso requer a inicialização do Firebase Admin SDK na Cloud Function, e provavelmente o uso de um serviço de e-mail (como SendGrid, Mailgun, etc.).
-// 5. Regras de Segurança: **CRÍTICO!** As regras de segurança do seu Firestore precisam ser configuradas para
-//    garantir que apenas usuários autenticados (ou com permissões específicas) possam ler, escrever, atualizar e excluir dados.
-//    Por padrão, seu banco de dados pode estar aberto para todos. **NÃO DEIXE SEU BANCO DE DADOS ABERTO EM PRODUÇÃO.**
-//    Você configuraria isso na aba "Firestore Database" > "Regras" no Console do Firebase.
+function showMessage(message, isError = false) {
+    const msgDiv = document.createElement('div');
+    msgDiv.textContent = message;
+    msgDiv.style.position = 'fixed';
+    msgDiv.style.top = '20px';
+    msgDiv.style.right = '20px';
+    msgDiv.style.padding = '10px 20px';
+    msgDiv.style.background = isError ? '#ff4444' : '#4CAF50';
+    msgDiv.style.color = 'white';
+    msgDiv.style.borderRadius = '5px';
+    msgDiv.style.zIndex = '1000';
+    document.body.appendChild(msgDiv);
+    setTimeout(() => msgDiv.remove(), 3000);
+}
 
-
+// ----------------------------------------------------
+// 9. Inicialização
+// ----------------------------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("Aplicativo carregado!");
+});
 
 
