@@ -1,13 +1,13 @@
 // script.js
 
 // ----------------------------------------------------
-// 1. Configuração do Firebase (substitua pelos seus dados)
+// 1. Configuração do Firebase
 // ----------------------------------------------------
 const firebaseConfig = {
     apiKey: "AIzaSyASeIQJoEC5FmH3N85uf0O93ngYxvFS-T8",
     authDomain: "gestaotarefas-862e0.firebaseapp.com",
     projectId: "gestaotarefas-862e0",
-    storageBucket: "gestaotarefas-862e0.firebasestorage.app",
+    storageBucket: "gestaotarefas-862e0.appspot.com",
     messagingSenderId: "425723057663",
     appId: "1:425723057663:web:c2e145985690b8c24fc3ca"
 };
@@ -25,18 +25,15 @@ const auth = getAuth(app);
 // ----------------------------------------------------
 // 2. Referências aos Elementos HTML
 // ----------------------------------------------------
-// Views
+// Autenticação
 const loggedOutView = document.getElementById('logged-out-view');
 const loggedInView = document.getElementById('logged-in-view');
 const userEmailDisplay = document.getElementById('user-email-display');
 const logoutButton = document.getElementById('logout-button');
-
-// Formulários de Autenticação
 const loginForm = document.getElementById('login-form');
 const loginEmailInput = document.getElementById('login-email');
 const loginPasswordInput = document.getElementById('login-password');
 const loginErrorDisplay = document.getElementById('login-error');
-
 const signupForm = document.getElementById('signup-form');
 const signupEmailInput = document.getElementById('signup-email');
 const signupPasswordInput = document.getElementById('signup-password');
@@ -51,6 +48,7 @@ const cancelEditBtn = document.getElementById('cancel-edit-btn');
 const taskAssigneeSelect = document.getElementById('task-assignee');
 const filterStatusSelect = document.getElementById('filter-status');
 const filterAssigneeSelect = document.getElementById('filter-assignee');
+const taskSeiProcessInput = document.getElementById('task-sei-process');
 const filterStartDateInput = document.getElementById('filter-start-date');
 const filterEndDateInput = document.getElementById('filter-end-date');
 const resetFiltersBtn = document.getElementById('reset-filters-btn');
@@ -61,7 +59,21 @@ let assigneeListenerUnsubscribe = null;
 let tasksListenerUnsubscribe = null;
 
 // ----------------------------------------------------
-// 3. Autenticação (Login, Cadastro, Logout)
+// 3. Sistema de Mensagens
+// ----------------------------------------------------
+function showMessage(message, isError = false) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `flash-message ${isError ? 'flash-error' : 'flash-success'}`;
+    messageDiv.textContent = message;
+    document.body.appendChild(messageDiv);
+    
+    setTimeout(() => {
+        messageDiv.remove();
+    }, 3000);
+}
+
+// ----------------------------------------------------
+// 4. Autenticação
 // ----------------------------------------------------
 // Login
 loginForm.addEventListener('submit', async (e) => {
@@ -107,12 +119,9 @@ logoutButton.addEventListener('click', () => {
     });
 });
 
-// ----------------------------------------------------
-// 4. Gerenciamento de Estado de Autenticação
-// ----------------------------------------------------
+// Monitorar estado de autenticação
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        // Usuário logado
         currentUserId = user.uid;
         userEmailDisplay.textContent = user.email;
         loggedInView.style.display = 'block';
@@ -120,11 +129,9 @@ onAuthStateChanged(auth, (user) => {
         document.querySelector('main').style.display = 'block';
         document.getElementById('auth-section').style.display = 'none';
 
-        // Inicia listeners
         subscribeAssigneeSelect();
         subscribeAndApplyFilters();
     } else {
-        // Usuário deslogado
         currentUserId = null;
         userEmailDisplay.textContent = '';
         loggedInView.style.display = 'none';
@@ -132,7 +139,6 @@ onAuthStateChanged(auth, (user) => {
         document.querySelector('main').style.display = 'none';
         document.getElementById('auth-section').style.display = 'block';
 
-        // Remove listeners
         unsubscribeAssigneeSelect();
         unsubscribeFromTasks();
         tasksTableBody.innerHTML = '<tr><td colspan="9">Faça login para ver e gerenciar tarefas.</td></tr>';
@@ -172,13 +178,13 @@ function unsubscribeAssigneeSelect() {
 }
 
 // ----------------------------------------------------
-// 6. Gerenciamento de Tarefas (CRUD)
+// 6. CRUD de Tarefas
 // ----------------------------------------------------
 // Adicionar/Editar Tarefa
 taskForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    // Validação
+    // Validações
     const description = document.getElementById('task-description').value;
     const deadline = document.getElementById('task-deadline').value;
     if (!description || !deadline) {
@@ -186,7 +192,7 @@ taskForm.addEventListener('submit', async (e) => {
         return;
     }
 
-    const submitButton = e.target.querySelector('button[type="submit"]');
+    const submitButton = taskForm.querySelector('button[type="submit"]');
     const isEditMode = submitButton.textContent.includes("Atualizar");
 
     const taskData = {
@@ -198,8 +204,9 @@ taskForm.addEventListener('submit', async (e) => {
         priority: document.getElementById('task-priority').value,
         observations: document.getElementById('task-observations').value,
         status: document.getElementById('task-status').value,
-        createdAt: new Date(),
-        userId: currentUserId // Adiciona o ID do usuário criador
+        createdAt: isEditMode ? undefined : new Date(),
+        updatedAt: new Date(),
+        userId: currentUserId
     };
 
     try {
@@ -214,20 +221,23 @@ taskForm.addEventListener('submit', async (e) => {
         taskForm.reset();
         submitButton.textContent = "Salvar Tarefa";
         delete submitButton.dataset.taskId;
-        cancelEditBtn.style.display = 'none';
+        
+        if (cancelEditBtn) cancelEditBtn.style.display = 'none';
     } catch (error) {
         console.error("Erro ao salvar tarefa:", error);
-        showMessage('Erro ao salvar tarefa: ' + error.message, true);
+        showMessage(`Erro ao ${isEditMode ? 'atualizar' : 'salvar'} tarefa: ${error.message}`, true);
     }
 });
 
 // Cancelar Edição
-cancelEditBtn.addEventListener('click', () => {
-    taskForm.reset();
-    cancelEditBtn.style.display = 'none';
-    taskForm.querySelector('button[type="submit"]').textContent = "Salvar Tarefa";
-    delete taskForm.querySelector('button[type="submit"]').dataset.taskId;
-});
+if (cancelEditBtn) {
+    cancelEditBtn.addEventListener('click', () => {
+        taskForm.reset();
+        cancelEditBtn.style.display = 'none';
+        taskForm.querySelector('button[type="submit"]').textContent = "Salvar Tarefa";
+        delete taskForm.querySelector('button[type="submit"]').dataset.taskId;
+    });
+}
 
 // Renderizar Tarefa
 function renderTask(task) {
@@ -271,7 +281,7 @@ async function editTask(id) {
         const submitButton = taskForm.querySelector('button[type="submit"]');
         submitButton.textContent = "Atualizar Tarefa";
         submitButton.dataset.taskId = id;
-        cancelEditBtn.style.display = 'block';
+        if (cancelEditBtn) cancelEditBtn.style.display = 'block';
         
         document.getElementById('cadastro-tarefa').scrollIntoView({ behavior: 'smooth' });
     } catch (error) {
@@ -305,7 +315,7 @@ function subscribeAndApplyFilters() {
 
     let q = query(
         collection(db, "tarefas"),
-        where("userId", "==", currentUserId), // Filtra por usuário
+        where("userId", "==", currentUserId),
         orderBy("createdAt", "desc")
     );
 
@@ -355,28 +365,8 @@ filterStartDateInput.addEventListener('change', subscribeAndApplyFilters);
 filterEndDateInput.addEventListener('change', subscribeAndApplyFilters);
 
 // ----------------------------------------------------
-// 8. Utilitários
-// ----------------------------------------------------
-function showMessage(message, isError = false) {
-    const msgDiv = document.createElement('div');
-    msgDiv.textContent = message;
-    msgDiv.style.position = 'fixed';
-    msgDiv.style.top = '20px';
-    msgDiv.style.right = '20px';
-    msgDiv.style.padding = '10px 20px';
-    msgDiv.style.background = isError ? '#ff4444' : '#4CAF50';
-    msgDiv.style.color = 'white';
-    msgDiv.style.borderRadius = '5px';
-    msgDiv.style.zIndex = '1000';
-    document.body.appendChild(msgDiv);
-    setTimeout(() => msgDiv.remove(), 3000);
-}
-
-// ----------------------------------------------------
-// 9. Inicialização
+// 8. Inicialização
 // ----------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
     console.log("Aplicativo carregado!");
 });
-
-
