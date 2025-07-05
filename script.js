@@ -375,11 +375,8 @@ async function deleteTask(id) {
 function subscribeAndApplyFilters() {
     if (tasksListenerUnsubscribe) tasksListenerUnsubscribe();
 
-    try {
-        let q = query(
-            collection(db, "tarefas"),
-            orderBy("createdAt", "desc")
-        );
+   try {
+        let q = query(collection(db, "tarefas"));  // Sem orderBy inicial
 
         const selectedStatus = filterStatusSelect.value;
         const selectedAssignee = filterAssigneeSelect.value;
@@ -388,9 +385,31 @@ function subscribeAndApplyFilters() {
 
         if (selectedStatus !== "all") q = query(q, where("status", "==", selectedStatus));
         if (selectedAssignee !== "all") q = query(q, where("assignee", "==", selectedAssignee));
-        if (startDate) q = query(q, where("deadline", ">=", new Date(`${startDate}T00:00:00`)));
-        if (endDate) q = query(q, where("deadline", "<=", new Date(`${endDate}T23:59:59`)));
+        // Filtro por intervalo de datas (com tratamento UTC)
+if (startDate || endDate) {
+    if (startDate && endDate) {
+        q = query(q, 
+            where("deadline", ">=", toUTCDate(startDate)),
+            where("deadline", "<=", toUTCDate(endDate, true)),
+            orderBy("deadline")  // Obrigatório para filtros compostos
+        );
+    } else if (startDate) {
+        q = query(q, 
+            where("deadline", ">=", toUTCDate(startDate)),
+            orderBy("deadline")
+        );
+    } else {
+        q = query(q, 
+            where("deadline", "<=", toUTCDate(endDate, true)),
+            orderBy("deadline")
+        );
+    }
+}
 
+       // Ordenação principal (após todos os filtros)
+if (!startDate && !endDate) {
+    q = query(q, orderBy("createdAt", "desc"));  // Só aplica se não filtrar por data
+}
         tasksListenerUnsubscribe = onSnapshot(q, 
             (snapshot) => {
                 tasksTableBody.innerHTML = '';
