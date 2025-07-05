@@ -1,5 +1,7 @@
 /* style.css */
 
+/* style.css - Versão Atualizada */
+
 /* Reset básico e configurações gerais */
 * {
     box-sizing: border-box;
@@ -10,7 +12,7 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
-    background-color: #f4f7f6; /* Um fundo suave */
+    background-color: #f4f7f6;
     color: #333;
     padding: 20px;
 }
@@ -24,7 +26,7 @@ body {
 
 /* Cabeçalho */
 header {
-    background: #4a90e2; /* Um azul vibrante para o cabeçalho */
+    background: #4a90e2;
     color: #fff;
     padding: 1rem 0;
     text-align: center;
@@ -40,13 +42,13 @@ header h1 {
 /* Seções principais */
 main {
     display: grid;
-    grid-template-columns: 1fr; /* Por padrão, uma coluna */
+    grid-template-columns: 1fr;
     gap: 20px;
 }
 
 @media (min-width: 768px) {
     main {
-        grid-template-columns: 1fr 2fr; /* Layout de duas colunas para telas maiores */
+        grid-template-columns: 1fr 2fr;
     }
     #cadastro-tarefa {
         grid-column: 1 / 2;
@@ -55,10 +57,9 @@ main {
         grid-column: 2 / 3;
     }
     #painel-resumo {
-        grid-column: 1 / 3; /* Ocupa a largura total abaixo */
+        grid-column: 1 / 3;
     }
 }
-
 
 section {
     background: #fff;
@@ -75,6 +76,45 @@ section h2 {
     padding-bottom: 10px;
 }
 
+/* Autenticação */
+#auth-section {
+    max-width: 800px;
+    margin: 0 auto 30px;
+}
+
+.auth-forms-wrapper {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+}
+
+@media (min-width: 768px) {
+    .auth-forms-wrapper {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.auth-form {
+    background: #fcfcfc;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+#logged-in-view {
+    text-align: center;
+    padding: 20px;
+}
+
+#logout-button {
+    background-color: #e74c3c;
+    margin-top: 15px;
+}
+
+#logout-button:hover {
+    background-color: #c0392b;
+}
+
 /* Formulário */
 .form-group {
     margin-bottom: 15px;
@@ -88,6 +128,8 @@ section h2 {
 }
 
 .form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"],
 .form-group input[type="date"],
 .form-group select,
 .form-group textarea {
@@ -101,6 +143,8 @@ section h2 {
 }
 
 .form-group input[type="text"]:focus,
+.form-group input[type="email"]:focus,
+.form-group input[type="password"]:focus,
 .form-group input[type="date"]:focus,
 .form-group select:focus,
 .form-group textarea:focus {
@@ -110,21 +154,39 @@ section h2 {
 }
 
 button[type="submit"] {
-    display: block;
-    width: 100%;
+    display: inline-block;
     padding: 12px 20px;
-    background-color: #5cb85c; /* Verde para o botão de salvar */
+    background-color: #5cb85c;
     color: white;
     border: none;
     border-radius: 5px;
     font-size: 1.1rem;
     cursor: pointer;
     transition: background-color 0.3s ease;
-    margin-top: 20px;
+    margin-top: 10px;
 }
 
 button[type="submit"]:hover {
     background-color: #4cae4c;
+}
+
+/* Botão de Cancelar */
+#cancel-edit-btn {
+    display: inline-block;
+    padding: 12px 20px;
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-left: 10px;
+    margin-top: 10px;
+}
+
+#cancel-edit-btn:hover {
+    background-color: #c0392b;
 }
 
 /* Filtros */
@@ -137,15 +199,17 @@ button[type="submit"]:hover {
     background-color: #f9f9f9;
     border-radius: 8px;
     border: 1px solid #eee;
-    align-items: center; /* Alinha os itens verticalmente */
+    align-items: center;
 }
 
 .filters label {
     font-weight: bold;
     color: #555;
+    margin-right: 5px;
 }
 
-.filters select {
+.filters select,
+.filters input[type="date"] {
     padding: 8px 12px;
     border: 1px solid #ddd;
     border-radius: 5px;
@@ -153,16 +217,31 @@ button[type="submit"]:hover {
     background-color: #fff;
 }
 
+#reset-filters-btn {
+    background-color: #95a5a6;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: background-color 0.3s;
+    margin-left: auto;
+}
+
+#reset-filters-btn:hover {
+    background-color: #7f8c8d;
+}
 
 /* Tabela de Tarefas */
 .task-list-container {
-    overflow-x: auto; /* Garante que a tabela seja rolada em telas pequenas */
+    overflow-x: auto;
+    margin-top: 15px;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 15px;
 }
 
 table thead th {
@@ -181,11 +260,11 @@ table tbody td {
 }
 
 table tbody tr:nth-child(even) {
-    background-color: #f9f9f9; /* Linhas zebradas para melhor leitura */
+    background-color: #f9f9f9;
 }
 
 table tbody tr:hover {
-    background-color: #eef7ff; /* Destaca a linha ao passar o mouse */
+    background-color: #eef7ff;
 }
 
 /* Estilos para o status da tarefa */
@@ -197,49 +276,97 @@ table tbody tr:hover {
     font-size: 0.9em;
     color: white;
     text-align: center;
+    min-width: 100px;
 }
 
 .status-Concluído {
-    background-color: #28a745; /* Verde */
+    background-color: #28a745;
 }
 
-.status-Não-Iniciado { /* Ajustado para corresponder ao texto do HTML */
-    background-color: #6c757d; /* Cinza */
+.status-Não-Iniciado {
+    background-color: #6c757d;
 }
 
-.status-Em-Andamento { /* Ajustado para corresponder ao texto do HTML */
-    background-color: #ffc107; /* Laranja */
-    color: #333; /* Texto escuro para contraste */
+.status-Em-Andamento {
+    background-color: #ffc107;
+    color: #333;
 }
 
 .status-Pendente {
-    background-color: #dc3545; /* Vermelho */
+    background-color: #dc3545;
 }
 
-/* Botões de Ações (Editar/Excluir) */
+/* Botões de Ações */
+.action-buttons {
+    display: flex;
+    gap: 5px;
+}
+
 .action-buttons button {
     background: none;
     border: none;
     cursor: pointer;
     font-size: 1.1em;
-    margin-right: 5px;
-    transition: color 0.2s ease;
+    transition: transform 0.2s ease;
+    padding: 5px;
 }
 
 .action-buttons .edit-btn {
-    color: #007bff; /* Azul para editar */
+    color: #007bff;
 }
 
 .action-buttons .edit-btn:hover {
     color: #0056b3;
+    transform: scale(1.1);
 }
 
 .action-buttons .delete-btn {
-    color: #dc3545; /* Vermelho para excluir */
+    color: #dc3545;
 }
 
 .action-buttons .delete-btn:hover {
     color: #b02a37;
+    transform: scale(1.1);
+}
+
+/* Mensagens */
+.error-message {
+    color: #dc3545;
+    font-size: 0.9em;
+    margin-top: 10px;
+}
+
+/* Mensagens Flash */
+.flash-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    border-radius: 5px;
+    color: white;
+    font-weight: bold;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease-out;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+.flash-success {
+    background-color: #28a745;
+}
+
+.flash-error {
+    background-color: #dc3545;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Rodapé */
@@ -252,16 +379,25 @@ footer {
     border-top: 1px solid #eee;
 }
 
-.error-message {
-    color: #dc3545; /* Vermelho para mensagens de erro */
-    font-size: 0.9em;
-    margin-top: 10px;
-}
-
-.auth-form {
-    background: #fcfcfc;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
+/* Responsividade */
+@media (max-width: 768px) {
+    .filters {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    #reset-filters-btn {
+        margin-left: 0;
+        width: 100%;
+    }
+    
+    .auth-forms-wrapper {
+        grid-template-columns: 1fr;
+    }
+    
+    button[type="submit"],
+    #cancel-edit-btn {
+        width: 100%;
+        margin-left: 0;
+    }
 }
