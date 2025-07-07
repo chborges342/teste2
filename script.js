@@ -14,7 +14,7 @@ const firebaseConfig = {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
 import { 
     getFirestore, collection, addDoc, onSnapshot, 
-    query, orderBy, doc, updateDoc, deleteDoc, where, getDocs
+    query, orderBy, doc, updateDoc, deleteDoc, where, getDocs, getDoc
 } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore.js";
 import { 
     getAuth, createUserWithEmailAndPassword, 
@@ -114,14 +114,15 @@ function renderTask(task) {
         <td class="${isUrgent ? 'urgent' : ''}">
             ${deadline ? deadline.toLocaleDateString('pt-BR') : '-'}
         </td>
-        <td><span class="status ${task.status.replace(/\s/g, '-')}">${task.status}</span></td>
+        <td>
+            <span class="status ${task.status.replace(/\s/g, '-')}">${task.status}</span>
+            <div class="task-actions">
+                <button class="btn-edit" data-id="${task.id}"><i class="fas fa-edit"></i></button>
+                <button class="btn-delete" data-id="${task.id}"><i class="fas fa-trash"></i></button>
+            </div>
+        </td>
         <td>${helpers.escapeHtml(task.observations || '')}</td>
     `;
-
-    if (task.userId === currentUser?.uid) {
-        row.addEventListener('click', () => editTask(task.id));
-        row.style.cursor = 'pointer';
-    }
 
     ui.tasksTableBody.appendChild(row);
 }
@@ -131,12 +132,20 @@ async function loadAssignees() {
     try {
         const snapshot = await getDocs(collection(db, "usuarios"));
         ui.taskAssigneeSelect.innerHTML = '<option value="">Selecione...</option>';
+        const filterAssigneeSelect = document.getElementById('filter-assignee');
+        if (filterAssigneeSelect) {
+            filterAssigneeSelect.innerHTML = '<option value="all">Todos colaboradores</option>';
+        }
         
         snapshot.forEach(doc => {
             const option = document.createElement('option');
-            option.value = doc.data().nome;
+            option.value = doc.id;
             option.textContent = doc.data().nome;
-            ui.taskAssigneeSelect.appendChild(option);
+            ui.taskAssigneeSelect.appendChild(option.cloneNode(true));
+            
+            if (filterAssigneeSelect) {
+                filterAssigneeSelect.appendChild(option);
+            }
         });
     } catch (error) {
         console.error("Erro ao carregar colaboradores:", error);
@@ -181,9 +190,27 @@ function setupTasksListener() {
 
     let q = query(collection(db, "tarefas"), orderBy("createdAt", "desc"));
 
+    // Filtro por status
     const statusFilter = ui.filterStatusSelect?.value;
     if (statusFilter && statusFilter !== "all") {
         q = query(q, where("status", "==", statusFilter));
+    }
+
+    // Filtro por colaborador
+    const assigneeFilter = document.getElementById('filter-assignee')?.value;
+    if (assigneeFilter && assigneeFilter !== "all") {
+        q = query(q, where("assignee", "==", assigneeFilter));
+    }
+
+    // Filtro por data
+    const startDate = document.getElementById('filter-start-date')?.value;
+    const endDate = document.getElementById('filter-end-date')?.value;
+    
+    if (startDate) {
+        q = query(q, where("deadline", ">=", new Date(startDate)));
+    }
+    if (endDate) {
+        q = query(q, where("deadline", "<=", new Date(endDate)));
     }
 
     unsubscribeCallbacks.tasks = onSnapshot(q, (snapshot) => {
@@ -223,18 +250,89 @@ async function editTask(taskId) {
             document.getElementById('task-type').value = task.type;
             document.getElementById('task-sei-process').value = task.seiProcess || '';
             document.getElementById('task-assignee').value = task.assignee || '';
-            document.getElementById('task-deadline').value = task.deadline?.toDate().toISOString().split('T')[0];
+            
+            // Formatar data corretamente
+            const deadlineDate = task.deadline?.toDate();
+            if (deadlineDate) {
+                document.getElementById('task-deadline').value = deadlineDate.toISOString().split('T')[0];
+            }
+            
             document.getElementById('task-status').value = task.status;
             document.getElementById('task-priority').value = task.priority;
             document.getElementById('task-observations').value = task.observations || '';
 
-            // Rolagem suave para o formulário
+            // Rolagem suave
             document.querySelector('.cadastro-container').scrollIntoView({ behavior: 'smooth' });
         }
     } catch (error) {
         console.error("Erro ao editar tarefa:", error);
-        helpers.showMessage("Erro ao carregar tarefa", true);
+        helpers.showMessage("Erro ao carregar tarefa: " + error.message, true);
     }
+}
+
+// Configurar ações de tarefas
+function setupTaskActions() {
+    document.addEventListener('click', async (e) => {
+        // Edição
+        if (e.target.closest('.btn-edit')) {
+            const taskId = e.target.closest('.btn-edit').dataset.id;
+            await editTask(taskId);
+        }
+        
+        // Exclusão
+        if (e.target.closest('.btn-delete')) {
+            const taskId = e.target.closest('.btn-delete').dataset.id;
+            if (confirm('Tem certeza que deseja excluir esta tarefa?')) {
+                try {
+                    await deleteDoc(doc(db, "tarefas", taskId));
+                    helpers.showMessage("Tarefa excluída com sucesso!");
+                } catch (error) {
+                    helpers.showMessage("Erro ao excluir tarefa: " + error.message, true);
+                }
+            }
+        }
+    });
+}
+
+// Formulário de tarefas
+function setupTaskForm() {
+    ui.taskForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        try {
+            const taskData = {
+                description: document.getElementById('task-description').value,
+                type: document.getElementById('task-type').value,
+                seiProcess: document.getElementById('task-sei-process').value,
+                assignee: document.getElementById('task-assignee').value,
+                deadline: new Date(document.getElementById('task-deadline').value),
+                status: document.getElementById('task-status').value,
+                priority: document.getElementById('task-priority').value,
+                observations: document.getElementById('task-observations').value,
+                userId: currentUser.uid,
+                createdAt: new Date()
+            };
+
+            if (editTaskId) {
+                await updateDoc(doc(db, "tarefas", editTaskId), taskData);
+                helpers.showMessage("Tarefa atualizada!");
+            } else {
+                await addDoc(collection(db, "tarefas"), taskData);
+                helpers.showMessage("Tarefa criada!");
+            }
+
+            ui.taskForm.reset();
+            editTaskId = null;
+        } catch (error) {
+            console.error("Erro ao salvar tarefa:", error);
+            helpers.showMessage("Erro ao salvar tarefa: " + error.message, true);
+        }
+    });
+
+    ui.cancelEditBtn.addEventListener('click', () => {
+        ui.taskForm.reset();
+        editTaskId = null;
+    });
 }
 
 // Autenticação
@@ -290,7 +388,9 @@ function setupAuth() {
             ui.loggedOutView.style.display = 'block';
             ui.mainGrid.style.display = 'none';
             ui.authSection.style.display = 'block';
-            ui.tasksTableBody.innerHTML = '<tr><td colspan="7">Faça login para ver tarefas</td></tr>';
+            if (ui.tasksTableBody) {
+                ui.tasksTableBody.innerHTML = '<tr><td colspan="7">Faça login para ver tarefas</td></tr>';
+            }
         }
     });
 
@@ -326,56 +426,33 @@ function setupAuth() {
     ui.logoutButton.addEventListener('click', () => signOut(auth));
 }
 
-// Formulário de tarefas
-function setupTaskForm() {
-    ui.taskForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        try {
-            const taskData = {
-                description: document.getElementById('task-description').value,
-                type: document.getElementById('task-type').value,
-                seiProcess: document.getElementById('task-sei-process').value,
-                assignee: document.getElementById('task-assignee').value,
-                deadline: new Date(document.getElementById('task-deadline').value),
-                status: document.getElementById('task-status').value,
-                priority: document.getElementById('task-priority').value,
-                observations: document.getElementById('task-observations').value,
-                userId: currentUser.uid,
-                createdAt: new Date()
-            };
-
-            if (editTaskId) {
-                await updateDoc(doc(db, "tarefas", editTaskId), taskData);
-                helpers.showMessage("Tarefa atualizada!");
-            } else {
-                await addDoc(collection(db, "tarefas"), taskData);
-                helpers.showMessage("Tarefa criada!");
-            }
-
-            ui.taskForm.reset();
-            editTaskId = null;
-        } catch (error) {
-            console.error("Erro ao salvar tarefa:", error);
-            helpers.showMessage("Erro ao salvar tarefa: " + error.message, true);
-        }
-    });
-
-    ui.cancelEditBtn.addEventListener('click', () => {
-        ui.taskForm.reset();
-        editTaskId = null;
-    });
-}
-
 // Filtros
 function setupFilters() {
     if (ui.filterStatusSelect) {
         ui.filterStatusSelect.addEventListener('change', setupTasksListener);
     }
 
+    const filterAssignee = document.getElementById('filter-assignee');
+    if (filterAssignee) {
+        filterAssignee.addEventListener('change', setupTasksListener);
+    }
+
+    const startDate = document.getElementById('filter-start-date');
+    const endDate = document.getElementById('filter-end-date');
+    
+    if (startDate) {
+        startDate.addEventListener('change', setupTasksListener);
+    }
+    if (endDate) {
+        endDate.addEventListener('change', setupTasksListener);
+    }
+
     if (ui.resetFiltersBtn) {
         ui.resetFiltersBtn.addEventListener('click', () => {
-            ui.filterStatusSelect.value = "all";
+            if (ui.filterStatusSelect) ui.filterStatusSelect.value = "all";
+            if (filterAssignee) filterAssignee.value = "all";
+            if (startDate) startDate.value = "";
+            if (endDate) endDate.value = "";
             setupTasksListener();
         });
     }
@@ -385,5 +462,6 @@ function setupFilters() {
 document.addEventListener('DOMContentLoaded', () => {
     setupAuth();
     setupTaskForm();
+    setupTaskActions();
     setupFilters();
 });
