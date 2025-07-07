@@ -1,11 +1,16 @@
-/* Reset e Variáveis */
+/* Reset e Variáveis Globais */
 :root {
     --primary: #667eea;
+    --primary-dark: #5a6dc1;
     --secondary: #764ba2;
     --success: #28a745;
     --danger: #dc3545;
     --warning: #ffc107;
     --info: #17a2b8;
+    --light-gray: #f5f7fa;
+    --dark-gray: #2c3e50;
+    --text-color: #333;
+    --border-color: #ddd;
 }
 
 * {
@@ -16,8 +21,8 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #f5f7fa;
-    color: #333;
+    background: var(--light-gray);
+    color: var(--text-color);
     line-height: 1.6;
 }
 
@@ -30,6 +35,9 @@ body {
 
 .main-grid {
     display: grid;
+    grid-template-areas:
+        "sidebar tasks"
+        "dashboard dashboard";
     grid-template-columns: 300px 1fr;
     grid-template-rows: 1fr auto;
     gap: 20px;
@@ -37,6 +45,33 @@ body {
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
+}
+
+.cadastro-container {
+    grid-area: sidebar;
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    height: fit-content;
+    position: sticky;
+    top: 20px;
+}
+
+.tarefas-container {
+    grid-area: tasks;
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+}
+
+.dashboard-container {
+    grid-area: dashboard;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
 }
 
 /* Cabeçalho */
@@ -47,11 +82,16 @@ body {
     justify-content: space-between;
     align-items: center;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
 .app-header h1 {
     font-size: 1.3rem;
-    color: #2c3e50;
+    color: var(--dark-gray);
+    display: flex;
+    align-items: center;
 }
 
 .app-header i {
@@ -59,15 +99,39 @@ body {
     color: var(--primary);
 }
 
-/* Sidebar de Cadastro */
-.cadastro-container {
+/* Seção de Autenticação */
+.auth-section {
+    max-width: 500px;
+    margin: 2rem auto;
+    padding: 2rem;
     background: white;
-    border-radius: 10px;
-    padding: 1.5rem;
+    border-radius: 8px;
     box-shadow: 0 2px 15px rgba(0,0,0,0.05);
-    height: fit-content;
-    position: sticky;
-    top: 20px;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.auth-form h2 {
+    color: var(--primary);
+    text-align: center;
+}
+
+/* Formulários */
+.section-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.section-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--dark-gray);
 }
 
 .compact-form {
@@ -76,48 +140,124 @@ body {
     gap: 1rem;
 }
 
-.form-row {
-    display: flex;
-    gap: 1rem;
-}
-
-.form-group {
-    flex: 1;
-}
-
 .form-group {
     margin-bottom: 1rem;
 }
 
 .form-group label {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     margin-bottom: 0.5rem;
     font-weight: 500;
+    color: var(--dark-gray);
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
     width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    transition: border-color 0.3s;
 }
 
-/* Lista de Tarefas */
-.tarefas-container {
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.form-group textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+/* Botões */
+.btn-primary, .btn-secondary, .btn-small {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
     background: white;
-    border-radius: 10px;
-    padding: 1.5rem;
-    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    color: var(--primary);
+    border: 1px solid var(--primary);
+}
+
+.btn-secondary:hover {
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.btn-small {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+}
+
+.btn-icon {
+    background: none;
+    border: none;
+    color: var(--primary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Tabela de Tarefas */
+.filters {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-group select, 
+.filter-group input {
+    padding: 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.filter-group input[type="date"] {
+    max-width: 150px;
 }
 
 .table-container {
     overflow-x: auto;
     margin-top: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
 }
 
-/* Tabela Otimizada */
 #tasks-table {
     width: 100%;
     border-collapse: collapse;
@@ -127,7 +267,7 @@ body {
 #tasks-table th, #tasks-table td {
     padding: 12px 15px;
     text-align: left;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border-color);
 }
 
 #tasks-table th {
@@ -137,17 +277,21 @@ body {
     top: 0;
 }
 
-/* Larguras das Colunas */
-#tasks-table th:nth-child(1), #tasks-table td:nth-child(1) { width: 25%; } /* Descrição */
-#tasks-table th:nth-child(2), #tasks-table td:nth-child(2) { width: 12%; } /* Tipo */
-#tasks-table th:nth-child(3), #tasks-table td:nth-child(3) { width: 15%; } /* Processo SEI */
-#tasks-table th:nth-child(4), #tasks-table td:nth-child(4) { width: 15%; } /* Colaborador */
-#tasks-table th:nth-child(5), #tasks-table td:nth-child(5) { width: 10%; } /* Prazo */
-#tasks-table th:nth-child(6), #tasks-table td:nth-child(6) { width: 10%; } /* Status */
-#tasks-table th:nth-child(7), #tasks-table td:nth-child(7) { width: 13%; } /* Observações */
+#tasks-table tr:hover {
+    background-color: rgba(102, 126, 234, 0.05);
+}
 
-/* Status Destaque */
-.status-cell {
+/* Larguras das Colunas */
+#tasks-table th:nth-child(1), #tasks-table td:nth-child(1) { width: 25%; }
+#tasks-table th:nth-child(2), #tasks-table td:nth-child(2) { width: 12%; }
+#tasks-table th:nth-child(3), #tasks-table td:nth-child(3) { width: 15%; }
+#tasks-table th:nth-child(4), #tasks-table td:nth-child(4) { width: 15%; }
+#tasks-table th:nth-child(5), #tasks-table td:nth-child(5) { width: 10%; }
+#tasks-table th:nth-child(6), #tasks-table td:nth-child(6) { width: 10%; }
+#tasks-table th:nth-child(7), #tasks-table td:nth-child(7) { width: 13%; }
+
+/* Status e Ações */
+.status {
     font-weight: 600;
     text-transform: uppercase;
     font-size: 0.8rem;
@@ -162,62 +306,48 @@ body {
 .status-Não-Iniciado { background: #FFEEBA; color: #8A6D3B; }
 .status-Em-Andamento { background: #B8DAFF; color: #004085; }
 .status-Concluído { background: #C3E6CB; color: #155724; }
-.status-Pendente { background: #FFD1D1; color: #721C24; }
 
-/* Dashboard Inferior */
-.dashboard-container {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-    margin-top: 20px;
+.urgent {
+    color: var(--danger);
+    font-weight: bold;
 }
 
+.task-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    justify-content: center;
+}
+
+.btn-edit, .btn-delete {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    transition: all 0.2s;
+}
+
+.btn-edit {
+    color: var(--primary);
+}
+
+.btn-delete {
+    color: var(--danger);
+}
+
+.btn-edit:hover {
+    color: var(--primary-dark);
+    transform: scale(1.1);
+}
+
+.btn-delete:hover {
+    color: #c82333;
+    transform: scale(1.1);
+}
+
+/* Dashboard Cards */
 .dashboard-card {
     background: white;
     border-radius: 10px;
     padding: 1.5rem;
-    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
-    display: flex;
-    gap: 1rem;
-}
-
-.card-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 1.2rem;
-}
-
-.summary-chart {
-    margin-top: 10px;
-}
-
-/* Responsividade */
-@media (max-width: 1024px) {
-    .main-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .cadastro-container {
-        position: static;
-    }
-}
-
-@media (max-width: 768px) {
-    .form-row {
-        flex-direction: column;
-    }
-    
-    .dashboard-container {
-        grid-template-columns: 1fr;
-    }
-    
-    #tasks-table {
-        font-size: 0.9rem;
-    }
-}
+    box-shadow
