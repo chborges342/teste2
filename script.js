@@ -35,30 +35,29 @@ function getEl(id) {
 // Elementos da UI (compatíveis com seu HTML)
 const ui = {
     // Autenticação
-    authSection: getEl('auth-section'),
-    loggedInView: getEl('logged-in-view'),
-    loggedOutView: getEl('logged-out-view'),
-    userEmailDisplay: getEl('user-email-display'),
-    logoutButton: getEl('logout-button'),
-    loginForm: getEl('login-form'),
-    signupForm: getEl('signup-form'),
+    authSection: document.getElementById('auth-section'),
+    loggedInView: document.getElementById('logged-in-view'),
+    loggedOutView: document.getElementById('logged-out-view'), // Adicione este ID no seu HTML
+    userEmailDisplay: document.getElementById('user-email-display'),
+    logoutButton: document.getElementById('logout-button'),
+    loginForm: document.getElementById('login-form'), // Adicione este ID no seu HTML
+    signupForm: document.getElementById('signup-form'), // Adicione este ID no seu HTML
 
     // Tarefas
     mainGrid: document.querySelector('.main-grid'),
-    taskForm: getEl('task-form'),
-    tasksTableBody: getEl('tasks-table-body'),
-    cancelEditBtn: getEl('cancel-edit-btn'),
-    taskAssigneeSelect: getEl('task-assignee'),
+    taskForm: document.getElementById('task-form'),
+    tasksTableBody: document.getElementById('tasks-table-body'),
+    cancelEditBtn: document.getElementById('cancel-edit-btn'),
+    taskAssigneeSelect: document.getElementById('task-assignee'),
+    taskSeiProcess: document.getElementById('task-sei-process'),
+    taskDeadline: document.getElementById('task-deadline'),
+    taskStatus: document.getElementById('task-status'),
+    taskObservations: document.getElementById('task-observations'),
 
     // Filtros
-    filterStatusSelect: getEl('filter-status'),
-    filterAssigneeSelect: getEl('filter-assignee'),
-    resetFiltersBtn: getEl('reset-filters-btn'),
-
-    // Dashboard
-    statusSummary: getEl('status-summary'),
-    typeSummary: getEl('type-summary'),
-    assigneeSummary: getEl('assignee-summary')
+    filterStatusSelect: document.getElementById('filter-status'),
+    filterAssigneeSelect: document.getElementById('filter-assignee'),
+    resetFiltersBtn: document.getElementById('reset-filters-btn')
 };
 
 // Variáveis de estado
@@ -165,10 +164,19 @@ async function updateDashboard() {
 function setupTasksListener() {
     if (unsubscribeCallbacks.tasks) unsubscribeCallbacks.tasks();
 
+    // Base query
     let q = query(collection(db, "tarefas"), orderBy("createdAt", "desc"));
 
-    if (ui.filterStatusSelect?.value !== "all") {
-        q = query(q, where("status", "==", ui.filterStatusSelect.value));
+    // Aplicar filtros
+    const statusFilter = ui.filterStatusSelect?.value;
+    const assigneeFilter = ui.filterAssigneeSelect?.value;
+
+    if (statusFilter && statusFilter !== "all") {
+        q = query(q, where("status", "==", statusFilter));
+    }
+
+    if (assigneeFilter && assigneeFilter !== "all") {
+        q = query(q, where("assignee", "==", assigneeFilter));
     }
 
     unsubscribeCallbacks.tasks = onSnapshot(q, (snapshot) => {
