@@ -14,19 +14,45 @@
             <h1><i class="fas fa-tasks"></i> Gestão de Tarefas - Colegiado de Ciências Econômicas</h1>
             <div id="logged-in-view" style="display: none;">
                 <span id="user-email-display"></span>
-                <button id="logout-button"><i class="fas fa-sign-out-alt"></i> Sair</button>
+                <button id="logout-button" class="btn-icon"><i class="fas fa-sign-out-alt"></i> Sair</button>
             </div>
         </header>
 
         <!-- Seção de Autenticação -->
         <section id="auth-section" class="auth-section">
-            <!-- (Mantido igual ao seu código original) -->
             <div id="logged-out-view">
-    <!-- Conteúdo existente da seção de autenticação -->
+                <h2>Bem-vindo</h2>
+                <button id="show-login" class="btn-primary">Entrar</button>
+                <button id="show-signup" class="btn-secondary">Cadastrar</button>
             </div>
 
-            <form id="login-form">...</form>
-            <form id="signup-form">...</form>
+            <form id="login-form" class="auth-form" style="display: none;">
+                <h2>Login</h2>
+                <div class="form-group">
+                    <label for="login-email">E-mail</label>
+                    <input type="email" id="login-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Senha</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button type="submit" class="btn-primary">Entrar</button>
+                <button type="button" id="cancel-login" class="btn-secondary">Voltar</button>
+            </form>
+
+            <form id="signup-form" class="auth-form" style="display: none;">
+                <h2>Cadastro</h2>
+                <div class="form-group">
+                    <label for="signup-email">E-mail</label>
+                    <input type="email" id="signup-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="signup-password">Senha</label>
+                    <input type="password" id="signup-password" required>
+                </div>
+                <button type="submit" class="btn-primary">Cadastrar</button>
+                <button type="button" id="cancel-signup" class="btn-secondary">Voltar</button>
+            </form>
         </section>
 
         <!-- Layout Principal (após login) -->
@@ -37,41 +63,34 @@
                     <h2><i class="fas fa-plus-circle"></i> Nova Tarefa</h2>
                 </div>
                 <form id="task-form" class="compact-form">
-                    <!-- Campos do formulário otimizados -->
                     <div class="form-group">
                         <label for="task-description"><i class="fas fa-align-left"></i> Descrição*</label>
                         <input type="text" id="task-description" required>
                     </div>
                     
-                     <!-- Campos do formulário otimizados <div class="form-row">-->
-                    
-                        <div class="form-group">
-                            <label for="task-type"><i class="fas fa-tag"></i> Tipo*</label>
-                            <select id="task-type" required>
-                            <option value="Não Iniciado">Aproveitamento</option>
-                            <option value="Em Andamento">Retorno</option>
-                            <option value="Concluído">Trancamento</option>
-                            <option value="Não Iniciado">Estágio</option>
-                            <option value="Em Andamento">Consepe</option>
-                            <option value="Concluído">Solicitação de Transporte/Veículo</option>
-                            <option value="Em Andamento">Curicularização da Extensão</option>
-                            <option value="Concluído">Outros</option>
-                                
-
-                                
-                            </select>
-                        </div>
+                    <div class="form-group">
+                        <label for="task-type"><i class="fas fa-tag"></i> Tipo*</label>
+                        <select id="task-type" required>
+                            <option value="Aproveitamento">Aproveitamento</option>
+                            <option value="Retorno">Retorno</option>
+                            <option value="Trancamento">Trancamento</option>
+                            <option value="Estágio">Estágio</option>
+                            <option value="Consepe">Consepe</option>
+                            <option value="Solicitação de Transporte/Veículo">Solicitação de Transporte/Veículo</option>
+                            <option value="Curicularização da Extensão">Curicularização da Extensão</option>
+                            <option value="Outros">Outros</option>
+                        </select>
+                    </div>
 
                     <div class="form-group">
                         <label for="task-sei-process"><i class="fas fa-file-alt"></i> Processo SEI</label>
                         <input type="text" id="task-sei-process">
-                        </div>
+                    </div>
 
                     <div class="form-group">
                         <label for="task-assignee"><i class="fas fa-user"></i> Colaborador</label>
                         <select id="task-assignee" required>
-                        <option value="">Selecione...</option>
-                        <!-- Opções serão preenchidas pelo JS -->
+                            <option value="">Selecione...</option>
                         </select>
                     </div>
 
@@ -83,9 +102,18 @@
                     <div class="form-group">
                         <label for="task-status"><i class="fas fa-check-circle"></i> Status</label>
                         <select id="task-status" required>
-                        <option value="Não Iniciado">Não Iniciado</option>
-                        <option value="Em Andamento">Em Andamento</option>
-                        <option value="Concluído">Concluído</option>
+                            <option value="Não Iniciado">Não Iniciado</option>
+                            <option value="Em Andamento">Em Andamento</option>
+                            <option value="Concluído">Concluído</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="task-priority"><i class="fas fa-exclamation-circle"></i> Prioridade*</label>
+                        <select id="task-priority" required>
+                            <option value="Alta">Alta</option>
+                            <option value="Média">Média</option>
+                            <option value="Baixa">Baixa</option>
                         </select>
                     </div>
 
@@ -94,22 +122,6 @@
                         <textarea id="task-observations" rows="2"></textarea>
                     </div>
 
-
-
-                        
-                        <div class="form-group">
-                            <label for="task-priority"><i class="fas fa-exclamation-circle"></i> Prioridade*</label>
-                            <select id="task-priority" required>
-                                <option value="Alta">Alta</option>
-                                <option value="Média">Média</option>
-                                <option value="Baixa">Baixa</option>
-                            </select>
-                        </div>
-
-                           
-                    
-
-                    <!-- Outros campos compactados -->
                     <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Salvar</button>
                     <button type="button" id="cancel-edit-btn" class="btn-secondary"><i class="fas fa-times"></i> Cancelar</button>
                 </form>
@@ -120,14 +132,16 @@
                 <div class="section-header">
                     <h2><i class="fas fa-list"></i> Tarefas Registradas</h2>
                     <div class="filters">
-                        <!-- Filtros otimizados -->
                         <div class="filter-group">
                             <i class="fas fa-filter"></i>
                             <select id="filter-status">
-                                <!-- Opções mantidas -->
+                                <option value="all">Todos os status</option>
+                                <option value="Não Iniciado">Não Iniciado</option>
+                                <option value="Em Andamento">Em Andamento</option>
+                                <option value="Concluído">Concluído</option>
                             </select>
                         </div>
-                        <button id="reset-filters-btn" class="btn-small"><i class="fas fa-redo"></i></button>
+                        <button id="reset-filters-btn" class="btn-small"><i class="fas fa-redo"></i> Limpar</button>
                     </div>
                 </div>
 
@@ -145,7 +159,7 @@
                             </tr>
                         </thead>
                         <tbody id="tasks-table-body">
-                            <!-- Preenchido pelo JavaScript -->
+                            <!-- Tarefas serão carregadas aqui via JavaScript -->
                         </tbody>
                     </table>
                 </div>
@@ -159,9 +173,7 @@
                     </div>
                     <div class="card-content">
                         <h3>Por Status</h3>
-                        <div id="status-summary" class="summary-chart">
-                            <!-- Gráfico será gerado pelo JS -->
-                        </div>
+                        <div id="status-summary" class="summary-chart"></div>
                     </div>
                 </div>
                 
@@ -171,9 +183,7 @@
                     </div>
                     <div class="card-content">
                         <h3>Por Tipo</h3>
-                        <div id="type-summary" class="summary-chart">
-                            <!-- Gráfico será gerado pelo JS -->
-                        </div>
+                        <div id="type-summary" class="summary-chart"></div>
                     </div>
                 </div>
                 
@@ -183,9 +193,7 @@
                     </div>
                     <div class="card-content">
                         <h3>Por Colaborador</h3>
-                        <div id="assignee-summary" class="summary-chart">
-                            <!-- Gráfico será gerado pelo JS -->
-                        </div>
+                        <div id="assignee-summary" class="summary-chart"></div>
                     </div>
                 </div>
             </section>
@@ -196,11 +204,6 @@
         </footer>
     </div>
 
-    <!-- ... resto do HTML ... -->
-
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
-    <script type="module" src="script.js"></script> <!-- ← Correção aqui -->
+    <script type="module" src="script.js"></script>
 </body>
 </html>
