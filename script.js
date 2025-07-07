@@ -130,25 +130,29 @@ function renderTask(task) {
 // Carregar colaboradores
 async function loadAssignees() {
     try {
-        const snapshot = await getDocs(collection(db, "usuarios"));
+        const snapshot = await getDocs(collection(db, "colaboradores"));
         ui.taskAssigneeSelect.innerHTML = '<option value="">Selecione...</option>';
         const filterAssigneeSelect = document.getElementById('filter-assignee');
+        
         if (filterAssigneeSelect) {
             filterAssigneeSelect.innerHTML = '<option value="all">Todos colaboradores</option>';
         }
-        
+
         snapshot.forEach(doc => {
+            const collaborator = doc.data();
             const option = document.createElement('option');
-            option.value = doc.id;
-            option.textContent = doc.data().nome;
-            ui.taskAssigneeSelect.appendChild(option.cloneNode(true));
+            option.value = doc.id; // Usando o ID do documento
+            option.textContent = collaborator.nome || collaborator.email;
+            
+            ui.taskAssigneeSelect.appendChild(option);
             
             if (filterAssigneeSelect) {
-                filterAssigneeSelect.appendChild(option);
+                filterAssigneeSelect.appendChild(option.cloneNode(true));
             }
         });
     } catch (error) {
         console.error("Erro ao carregar colaboradores:", error);
+        helpers.showMessage("Erro ao carregar lista de colaboradores", true);
     }
 }
 
