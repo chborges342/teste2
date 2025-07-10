@@ -1,5 +1,4 @@
 // script.js
-
 // Configuração do Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyASeIQJoEC5FmH3N85uf0O93ngYxvFS-T8",
@@ -50,6 +49,10 @@ const ui = {
     // Filtros
     filterStatusSelect: document.getElementById('filter-status'),
     resetFiltersBtn: document.getElementById('reset-filters-btn'),
+    filterStartDate: document.getElementById('filter-start-date'),
+    filterEndDate: document.getElementById('filter-end-date'),
+    dateFilterIndicator: document.getElementById('date-filter-indicator'),
+    quickFilterWeek: document.getElementById('quick-filter-week'),
 
     // Dashboard
     statusSummary: document.getElementById('status-summary'),
@@ -93,24 +96,37 @@ const helpers = {
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
+    },
+
+    setDateFilterActive: (isActive) => {
+        if (ui.dateFilterIndicator) {
+            ui.dateFilterIndicator.style.display = isActive ? 'inline-block' : 'none';
+        }
+        if (ui.filterStartDate && ui.filterEndDate) {
+            if (isActive) {
+                ui.filterStartDate.classList.add('date-filter-active');
+                ui.filterEndDate.classList.add('date-filter-active');
+            } else {
+                ui.filterStartDate.classList.remove('date-filter-active');
+                ui.filterEndDate.classList.remove('date-filter-active');
+            }
+        }
     }
 };
 
 // Renderização de tarefas
 function renderTask(task) {
-    const tasksGrid = document.getElementById('tasks-grid');
-    if (!tasksGrid) return;
-
     const deadline = helpers.formatDate(task.deadline);
     const isUrgent = deadline && (deadline - new Date()) < 3 * 24 * 60 * 60 * 1000;
     const assigneeInitial = task.assignee ? task.assignee.charAt(0).toUpperCase() : '?';
 
     const taskCard = document.createElement('div');
-    taskCard.className = `task-card status-${task.status.replace(/\s/g, '-')} priority-${task.priority || 'Média'}`;
+    taskCard.className = `task-card status-${task.status.replace(/\s/g, '-')} priority-${task.priority || 'Média'} ${isUrgent ? 'urgent' : ''}`;
     taskCard.dataset.id = task.id;
     taskCard.dataset.status = task.status;
     taskCard.dataset.priority = task.priority;
     taskCard.dataset.assignee = task.assignee;
+    taskCard.dataset.deadline = deadline ? deadline.toISOString() : '';
 
     taskCard.innerHTML = `
         <div class="task-card-header">
@@ -154,7 +170,7 @@ function renderTask(task) {
         </div>
     `;
 
-    tasksGrid.appendChild(taskCard);
+    ui.tasksGrid.appendChild(taskCard);
 }
 
 // Carregar colaboradores
@@ -238,24 +254,40 @@ function setupTasksListener() {
         q = query(q, where("assignee", "==", assigneeFilter));
     }
 
-    // Filtro por data (corrigido)
-    const startDate = document.getElementById('filter-start-date')?.value;
-    const endDate = document.getElementById('filter-end-date')?.value;
+    // Filtro por data (versão corrigida)
+    const startDate = ui.filterStartDate?.value;
+    const endDate = ui.filterEndDate?.value;
     
-    if (startDate && endDate) {
-        q = query(
-            q,
-            where("deadline", ">=", new Date(startDate)),
-            where("deadline", "<=", new Date(endDate + "T23:59:59"))
-        );
-    } else if (startDate) {
-        q = query(q, where("deadline", ">=", new Date(startDate)));
-    } else if (endDate) {
-        q = query(q, where("deadline", "<=", new Date(endDate + "T23:59:59")));
+    if (startDate || endDate) {
+        try {
+            const start = startDate ? new Date(startDate) : null;
+            const end = endDate ? new Date(endDate) : null;
+            
+            if (end) end.setHours(23, 59, 59, 999);
+            
+            if (start && end) {
+                q = query(q, 
+                    where("deadline", ">=", start),
+                    where("deadline", "<=", end)
+                );
+                helpers.setDateFilterActive(true);
+            } else if (start) {
+                q = query(q, where("deadline", ">=", start));
+                helpers.setDateFilterActive(true);
+            } else if (end) {
+                q = query(q, where("deadline", "<=", end));
+                helpers.setDateFilterActive(true);
+            }
+        } catch (error) {
+            console.error("Erro no filtro de datas:", error);
+            helpers.showMessage("Erro ao aplicar filtro de datas", true);
+        }
+    } else {
+        helpers.setDateFilterActive(false);
     }
 
     unsubscribeCallbacks.tasks = onSnapshot(q, (snapshot) => {
-        if (ui.tasksGrid) ui.tasksGrid.innerHTML = '';
+        ui.tasksGrid.innerHTML = '';
         
         const noTasksMsg = document.getElementById('no-tasks-message');
         if (noTasksMsg) {
@@ -279,6 +311,9 @@ function setupTasksListener() {
         });
 
         updateDashboard();
+    }, (error) => {
+        console.error("Erro ao carregar tarefas:", error);
+        helpers.showMessage("Erro ao carregar tarefas", true);
     });
 }
 
@@ -304,7 +339,7 @@ function setupChipFilters() {
                 
                 if (unsubscribeCallbacks.tasks) unsubscribeCallbacks.tasks();
                 unsubscribeCallbacks.tasks = onSnapshot(q, snapshot => {
-                    if (ui.tasksGrid) ui.tasksGrid.innerHTML = '';
+                    ui.tasksGrid.innerHTML = '';
                     snapshot.forEach(doc => {
                         const data = doc.data();
                         renderTask({
@@ -316,6 +351,22 @@ function setupChipFilters() {
             }
         });
     });
+}
+
+// Configurar filtro rápido (últimos 7 dias)
+function setupQuickFilters() {
+    if (ui.quickFilterWeek) {
+        ui.quickFilterWeek.addEventListener('click', () => {
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(endDate.getDate() - 7);
+            
+            ui.filterStartDate.value = startDate.toISOString().split('T')[0];
+            ui.filterEndDate.value = endDate.toISOString().split('T')[0];
+            
+            setupTasksListener();
+        });
+    }
 }
 
 // Editar tarefa
@@ -335,7 +386,7 @@ async function editTask(taskId) {
             document.getElementById('task-assignee').value = task.assignee || '';
             
             // Formatar data
-            const deadlineDate = task.deadline?.toDate();
+            const deadlineDate = helpers.formatDate(task.deadline);
             if (deadlineDate) {
                 document.getElementById('task-deadline').value = deadlineDate.toISOString().split('T')[0];
             }
@@ -384,12 +435,15 @@ function setupTaskForm() {
             e.preventDefault();
             
             try {
+                const deadlineValue = document.getElementById('task-deadline').value;
+                const deadline = deadlineValue ? new Date(deadlineValue) : null;
+                
                 const taskData = {
                     description: document.getElementById('task-description').value,
                     type: document.getElementById('task-type').value,
                     seiProcess: document.getElementById('task-sei-process').value,
                     assignee: document.getElementById('task-assignee').value,
-                    deadline: new Date(document.getElementById('task-deadline').value),
+                    deadline: deadline,
                     status: document.getElementById('task-status').value,
                     priority: document.getElementById('task-priority').value,
                     observations: document.getElementById('task-observations').value,
@@ -527,23 +581,35 @@ function setupFilters() {
     if (filterAssignee) {
         filterAssignee.addEventListener('change', setupTasksListener);
     }
-
-    const startDate = document.getElementById('filter-start-date');
-    const endDate = document.getElementById('filter-end-date');
     
-    if (startDate) {
-        startDate.addEventListener('change', setupTasksListener);
+    if (ui.filterStartDate) {
+        ui.filterStartDate.addEventListener('change', function() {
+            if (this.value && ui.filterEndDate.value && this.value > ui.filterEndDate.value) {
+                helpers.showMessage("Data inicial não pode ser maior que data final", true);
+                this.value = '';
+                return;
+            }
+            setupTasksListener();
+        });
     }
-    if (endDate) {
-        endDate.addEventListener('change', setupTasksListener);
+    
+    if (ui.filterEndDate) {
+        ui.filterEndDate.addEventListener('change', function() {
+            if (this.value && ui.filterStartDate.value && this.value < ui.filterStartDate.value) {
+                helpers.showMessage("Data final não pode ser menor que data inicial", true);
+                this.value = '';
+                return;
+            }
+            setupTasksListener();
+        });
     }
 
     if (ui.resetFiltersBtn) {
         ui.resetFiltersBtn.addEventListener('click', () => {
             if (ui.filterStatusSelect) ui.filterStatusSelect.value = "all";
             if (filterAssignee) filterAssignee.value = "all";
-            if (startDate) startDate.value = "";
-            if (endDate) endDate.value = "";
+            if (ui.filterStartDate) ui.filterStartDate.value = "";
+            if (ui.filterEndDate) ui.filterEndDate.value = "";
             setupTasksListener();
         });
     }
@@ -556,4 +622,10 @@ document.addEventListener('DOMContentLoaded', () => {
     setupTaskActions();
     setupFilters();
     setupChipFilters();
+    setupQuickFilters();
+    
+    // Configura data mínima para os inputs de data
+    const today = new Date().toISOString().split('T')[0];
+    if (ui.filterStartDate) ui.filterStartDate.min = "2000-01-01";
+    if (ui.filterEndDate) ui.filterEndDate.min = "2000-01-01";
 });
