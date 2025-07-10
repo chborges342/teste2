@@ -96,9 +96,10 @@ const helpers = {
     }
 };
 
-// Renderização de tarefas como cards
+// Renderização de tarefas
 function renderTask(task) {
-    if (!ui.tasksGrid) return;
+    const tasksGrid = document.getElementById('tasks-grid');
+    if (!tasksGrid) return;
 
     const deadline = helpers.formatDate(task.deadline);
     const isUrgent = deadline && (deadline - new Date()) < 3 * 24 * 60 * 60 * 1000;
@@ -121,13 +122,13 @@ function renderTask(task) {
         </div>
         
         <div class="task-card-body">
-            <h3 class="task-title">${helpers.escapeHtml(task.description) || 'Nova Tarefa'}</h3>
-            <p class="task-description">${helpers.escapeHtml(task.observations) || 'Nenhuma observação cadastrada'}</p>
+            <h3 class="task-title">${task.description || 'Nova Tarefa'}</h3>
+            <p class="task-description">${task.observations || 'Nenhuma observação cadastrada'}</p>
             
             ${task.seiProcess ? `
                 <div class="task-sei-process">
                     <i class="fas fa-file-alt"></i>
-                    Processo SEI: ${helpers.escapeHtml(task.seiProcess)}
+                    Processo SEI: ${task.seiProcess}
                 </div>
             ` : ''}
         </div>
@@ -135,7 +136,7 @@ function renderTask(task) {
         <div class="task-card-footer">
             <div class="task-assignee">
                 <span class="assignee-avatar">${assigneeInitial}</span>
-                <span class="assignee-name">${helpers.escapeHtml(task.assignee) || 'Não atribuído'}</span>
+                <span class="assignee-name">${task.assignee || 'Não atribuído'}</span>
             </div>
             
             <span class="task-status status-${task.status.replace(/\s/g, '-')}">
@@ -153,7 +154,7 @@ function renderTask(task) {
         </div>
     `;
 
-    ui.tasksGrid.appendChild(taskCard);
+    tasksGrid.appendChild(taskCard);
 }
 
 // Carregar colaboradores
@@ -237,22 +238,19 @@ function setupTasksListener() {
         q = query(q, where("assignee", "==", assigneeFilter));
     }
 
-    // Filtro por intervalo de tempo (CORRIGIDO)
+    // Filtro por data (corrigido)
     const startDate = document.getElementById('filter-start-date')?.value;
     const endDate = document.getElementById('filter-end-date')?.value;
     
     if (startDate && endDate) {
-        // Quando ambas as datas estão preenchidas
         q = query(
             q,
             where("deadline", ">=", new Date(startDate)),
-            where("deadline", "<=", new Date(endDate + "T23:59:59")) // Inclui todo o dia final
+            where("deadline", "<=", new Date(endDate + "T23:59:59"))
         );
     } else if (startDate) {
-        // Apenas data inicial
         q = query(q, where("deadline", ">=", new Date(startDate)));
     } else if (endDate) {
-        // Apenas data final
         q = query(q, where("deadline", "<=", new Date(endDate + "T23:59:59")));
     }
 
@@ -298,7 +296,6 @@ function setupChipFilters() {
             if (key === 'all') {
                 setupTasksListener();
             } else {
-                // Aplica filtro adicional
                 let q = query(
                     collection(db, "tarefas"), 
                     where(key, "==", value),
@@ -347,7 +344,7 @@ async function editTask(taskId) {
             document.getElementById('task-priority').value = task.priority;
             document.getElementById('task-observations').value = task.observations || '';
 
-            // Rolagem suave para o formulário
+            // Rolagem suave
             document.querySelector('.cadastro-container').scrollIntoView({ behavior: 'smooth' });
         }
     } catch (error) {
@@ -541,21 +538,16 @@ function setupFilters() {
         endDate.addEventListener('change', setupTasksListener);
     }
 
-if (ui.resetFiltersBtn) {
-    ui.resetFiltersBtn.addEventListener('click', () => {
-        if (ui.filterStatusSelect) ui.filterStatusSelect.value = "all";
-        if (filterAssignee) filterAssignee.value = "all";
-        
-        // Limpa os campos de data
-        const startDate = document.getElementById('filter-start-date');
-        const endDate = document.getElementById('filter-end-date');
-        if (startDate) startDate.value = "";
-        if (endDate) endDate.value = "";
-        
-        setupTasksListener();
-    });
+    if (ui.resetFiltersBtn) {
+        ui.resetFiltersBtn.addEventListener('click', () => {
+            if (ui.filterStatusSelect) ui.filterStatusSelect.value = "all";
+            if (filterAssignee) filterAssignee.value = "all";
+            if (startDate) startDate.value = "";
+            if (endDate) endDate.value = "";
+            setupTasksListener();
+        });
+    }
 }
-    
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', () => {
