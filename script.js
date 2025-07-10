@@ -19,7 +19,8 @@ import {
     getAuth, createUserWithEmailAndPassword, 
     signInWithEmailAndPassword, signOut, onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
-import { Timestamp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore.js";
+import { Timestamp } from "firebase/firestore"; 
+
 
 
 const app = initializeApp(firebaseConfig);
