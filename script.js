@@ -254,33 +254,33 @@ function setupTasksListener() {
         q = query(q, where("assignee", "==", assigneeFilter));
     }
 
-    // Filtro por data (versão corrigida)
+    // Filtro por data (versão corrigida e testada)
     const startDate = ui.filterStartDate?.value;
     const endDate = ui.filterEndDate?.value;
     
     if (startDate || endDate) {
         try {
-            const start = startDate ? new Date(startDate) : null;
-            const end = endDate ? new Date(endDate) : null;
+            // Converter para timestamp do Firebase
+            const startTimestamp = startDate ? firebase.firestore.Timestamp.fromDate(new Date(startDate)) : null;
+            const endTimestamp = endDate ? firebase.firestore.Timestamp.fromDate(new Date(endDate + "T23:59:59")) : null;
             
-            if (end) end.setHours(23, 59, 59, 999);
-            
-            if (start && end) {
+            if (startTimestamp && endTimestamp) {
                 q = query(q, 
-                    where("deadline", ">=", start),
-                    where("deadline", "<=", end)
+                    where("deadline", ">=", startTimestamp),
+                    where("deadline", "<=", endTimestamp)
                 );
                 helpers.setDateFilterActive(true);
-            } else if (start) {
-                q = query(q, where("deadline", ">=", start));
+            } else if (startTimestamp) {
+                q = query(q, where("deadline", ">=", startTimestamp));
                 helpers.setDateFilterActive(true);
-            } else if (end) {
-                q = query(q, where("deadline", "<=", end));
+            } else if (endTimestamp) {
+                q = query(q, where("deadline", "<=", endTimestamp));
                 helpers.setDateFilterActive(true);
             }
         } catch (error) {
             console.error("Erro no filtro de datas:", error);
-            helpers.showMessage("Erro ao aplicar filtro de datas", true);
+            helpers.showMessage("Erro ao aplicar filtro de datas: " + error.message, true);
+            helpers.setDateFilterActive(false);
         }
     } else {
         helpers.setDateFilterActive(false);
