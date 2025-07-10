@@ -140,9 +140,16 @@ async function loadAssignees() {
 
         snapshot.forEach(doc => {
             const collaborator = doc.data();
+            
+            // Verificação robusta do nome
+            const displayName = collaborator.nome || 
+                              collaborator.displayName || 
+                              collaborator.nomeCompleto || 
+                              'Colaborador sem nome';
+            
             const option = document.createElement('option');
             option.value = doc.id; // Usando o ID do documento
-            option.textContent = collaborator.nome || collaborator.email;
+            option.textContent = displayName;
             
             ui.taskAssigneeSelect.appendChild(option);
             
