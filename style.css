@@ -574,3 +574,153 @@ body {
     outline: none;
     border-color: var(--primary);
 }
+
+    /* Estilo específico para os filtros de data */
+.date-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-group input[type="date"] {
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: inherit;
+    transition: all 0.3s;
+    max-width: 150px;
+}
+
+.filter-group input[type="date"]:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+/* Indicador visual quando filtro está ativo */
+.date-filter-active {
+    border-color: var(--primary);
+    background-color: rgba(102, 126, 234, 0.05);
+}
+
+/* Estilo para o indicador de filtro ativo */
+#date-filter-indicator {
+    margin-left: 0.5rem;
+    color: var(--success);
+    font-size: 0.9rem;
+}
+
+    /* Quando um filtro de data está aplicado */
+.filter-group input[type="date"][value]:not([value=""]) {
+    border-left: 3px solid var(--primary);
+    background-color: #f8f9ff;
+}
+
+/* Estilo para o chip de filtro rápido */
+.quick-filter-chip {
+    background: #e3f2fd;
+    color: var(--primary-dark);
+    border: 1px solid #bbdefb;
+}
+
+
+    /* Adicione ao .task-card */
+.task-card.urgent {
+    animation: pulse 2s infinite;
+    border-left: 4px solid var(--danger);
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+
+    @media (max-width: 768px) {
+    .main-grid {
+        grid-template-areas:
+            "sidebar"
+            "tasks"
+            "dashboard";
+        grid-template-columns: 1fr;
+    }
+    
+    .filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-group {
+        width: 100%;
+    }
+    
+    .filter-group input[type="date"] {
+        max-width: 100%;
+    }
+    
+    .date-filter-group {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+
+    /* Corrigindo o status "Não Iniciado" */
+.status-Não-Iniciado, 
+.status-Não-Iniciado { /* Duplicado para garantir */
+    background: #FFEEBA;
+    color: #8A6D3B;
+}
+
+
+    .filter-chip:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.filter-chip:active {
+    transform: translateY(0);
+}
+
+    #no-tasks-message {
+    padding: 2rem;
+    text-align: center;
+    background: #f9f9f9;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+#no-tasks-message i {
+    font-size: 3rem;
+    color: #ccc;
+    margin-bottom: 1rem;
+    opacity: 0.7;
+}
+
+
+    .filter-tooltip {
+    position: relative;
+    cursor: help;
+}
+
+.filter-tooltip:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    z-index: 100;
+}
+
+    .tasks-grid {
+    transition: opacity 0.3s ease;
+}
+
+.tasks-grid.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
