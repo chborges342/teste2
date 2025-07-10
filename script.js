@@ -541,16 +541,21 @@ function setupFilters() {
         endDate.addEventListener('change', setupTasksListener);
     }
 
-    if (ui.resetFiltersBtn) {
-        ui.resetFiltersBtn.addEventListener('click', () => {
-            if (ui.filterStatusSelect) ui.filterStatusSelect.value = "all";
-            if (filterAssignee) filterAssignee.value = "all";
-            if (startDate) startDate.value = "";
-            if (endDate) endDate.value = "";
-            setupTasksListener();
-        });
-    }
+if (ui.resetFiltersBtn) {
+    ui.resetFiltersBtn.addEventListener('click', () => {
+        if (ui.filterStatusSelect) ui.filterStatusSelect.value = "all";
+        if (filterAssignee) filterAssignee.value = "all";
+        
+        // Limpa os campos de data
+        const startDate = document.getElementById('filter-start-date');
+        const endDate = document.getElementById('filter-end-date');
+        if (startDate) startDate.value = "";
+        if (endDate) endDate.value = "";
+        
+        setupTasksListener();
+    });
 }
+    
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', () => {
