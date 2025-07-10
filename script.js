@@ -673,3 +673,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (ui.filterStartDate) ui.filterStartDate.min = "2000-01-01";
     if (ui.filterEndDate) ui.filterEndDate.min = "2000-01-01";
 });
+
+// DEBUG: Teste de inicialização
+console.log("Firebase inicializado:", app);
+console.log("Auth configurado:", auth);
+
+// Teste manual do listener
+onAuthStateChanged(auth, (user) => {
+    console.log("[TESTE] Listener de auth disparado:", user);
+});
