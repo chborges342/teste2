@@ -1,353 +1,445 @@
-/* Reset e Variáveis Globais */
-:root {
-    --primary: #667eea;
-    --primary-dark: #5a6dc1;
-    --secondary: #764ba2;
-    --success: #28a745;
-    --danger: #dc3545;
-    --warning: #ffc107;
-    --info: #17a2b8;
-    --light-gray: #f5f7fa;
-    --dark-gray: #2c3e50;
-    --text-color: #333;
-    --border-color: #ddd;
-}
+/* style.css - Versão Atualizada e Completa */
 
+/* ======================== */
+/* RESET E CONFIGURAÇÕES GERAIS */
+/* ======================== */
 * {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
 }
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: var(--light-gray);
-    color: var(--text-color);
     line-height: 1.6;
-}
-
-/* Layout Grid Principal */
-.app-grid {
-    display: grid;
-    grid-template-rows: auto 1fr auto;
-    min-height: 100vh;
-}
-
-.main-grid {
-    display: grid;
-    grid-template-areas:
-        "sidebar tasks"
-        "dashboard dashboard";
-    grid-template-columns: 300px 1fr;
-    grid-template-rows: 1fr auto;
-    gap: 20px;
+    background-color: #f4f7f6;
+    color: #333;
     padding: 20px;
-    max-width: 1400px;
-    margin: 0 auto;
-    width: 100%;
 }
 
-.cadastro-container {
-    grid-area: sidebar;
-    background: white;
-    border-radius: 10px;
-    padding: 1.5rem;
-    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
-    height: fit-content;
-    position: sticky;
-    top: 20px;
+.container {
+    max-width: 1200px;
+    margin: auto;
+    overflow: hidden;
+    padding: 0 20px;
 }
 
-.tarefas-container {
-    grid-area: tasks;
-    background: white;
-    border-radius: 10px;
-    padding: 1.5rem;
-    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
-}
-
-.dashboard-container {
-    grid-area: dashboard;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-    margin-top: 20px;
-}
-
-/* Cabeçalho */
-.app-header {
-    background: white;
-    padding: 1rem 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-}
-
-.app-header h1 {
-    font-size: 1.3rem;
-    color: var(--dark-gray);
-    display: flex;
-    align-items: center;
-}
-
-.app-header i {
-    margin-right: 10px;
-    color: var(--primary);
-}
-
-/* Seção de Autenticação */
-.auth-section {
-    max-width: 500px;
-    margin: 2rem auto;
-    padding: 2rem;
-    background: white;
+/* ======================== */
+/* CABEÇALHO */
+/* ======================== */
+header {
+    background: #4a90e2;
+    color: #fff;
+    padding: 1rem 0;
+    text-align: center;
+    margin-bottom: 20px;
     border-radius: 8px;
-    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+header h1 {
+    font-size: 2.2rem;
+}
+
+/* ======================== */
+/* LAYOUT PRINCIPAL */
+/* ======================== */
+main {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+}
+
+@media (min-width: 768px) {
+    main {
+        grid-template-columns: 1fr 2fr;
+    }
+    #cadastro-tarefa {
+        grid-column: 1 / 2;
+    }
+    #lista-tarefas {
+        grid-column: 2 / 3;
+    }
+    #painel-resumo {
+        grid-column: 1 / 3;
+    }
+}
+
+section {
+    background: #fff;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+section h2 {
+    color: #4a90e2;
+    margin-bottom: 20px;
+    font-size: 1.8rem;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+}
+
+/* ======================== */
+/* AUTENTICAÇÃO */
+/* ======================== */
+#auth-section {
+    max-width: 800px;
+    margin: 0 auto 30px;
+}
+
+.auth-forms-wrapper {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+}
+
+@media (min-width: 768px) {
+    .auth-forms-wrapper {
+        grid-template-columns: 1fr 1fr;
+    }
 }
 
 .auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
+    background: #fcfcfc;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.auth-form h2 {
-    color: var(--primary);
+#logged-in-view {
     text-align: center;
+    padding: 20px;
 }
 
-/* Formulários */
-.section-header {
-    margin-bottom: 1.5rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border-color);
+#logout-button {
+    background-color: #e74c3c;
+    margin-top: 15px;
+    transition: background-color 0.3s;
 }
 
-.section-header h2 {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--dark-gray);
+#logout-button:hover {
+    background-color: #c0392b;
 }
 
-.compact-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
+/* ======================== */
+/* FORMULÁRIOS */
+/* ======================== */
 .form-group {
-    margin-bottom: 1rem;
+    margin-bottom: 15px;
 }
 
 .form-group label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-    color: var(--dark-gray);
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #555;
 }
 
-.form-group input,
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"],
+.form-group input[type="date"],
 .form-group select,
 .form-group textarea {
     width: 100%;
-    padding: 0.75rem;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    transition: border-color 0.3s;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+    background-color: #fcfcfc;
+    transition: border-color 0.3s ease;
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
+    border-color: #4a90e2;
     outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
 }
 
-.form-group textarea {
-    min-height: 80px;
+textarea {
+    min-height: 100px;
     resize: vertical;
 }
 
-/* Botões */
-.btn-primary, .btn-secondary, .btn-small {
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 6px;
-    font-weight: 500;
+/* ======================== */
+/* BOTÕES */
+/* ======================== */
+button {
     cursor: pointer;
-    transition: all 0.3s;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
+    transition: all 0.3s ease;
 }
 
-.btn-primary {
-    background: var(--primary);
+button[type="submit"] {
+    display: inline-block;
+    padding: 12px 20px;
+    background-color: #5cb85c;
     color: white;
-}
-
-.btn-primary:hover {
-    background: var(--primary-dark);
-    transform: translateY(-1px);
-}
-
-.btn-secondary {
-    background: white;
-    color: var(--primary);
-    border: 1px solid var(--primary);
-}
-
-.btn-secondary:hover {
-    background: rgba(102, 126, 234, 0.1);
-}
-
-.btn-small {
-    padding: 0.5rem 1rem;
-    font-size: 0.85rem;
-}
-
-.btn-icon {
-    background: none;
     border: none;
-    color: var(--primary);
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    margin-top: 10px;
 }
 
-/* Tabela de Tarefas */
+button[type="submit"]:hover {
+    background-color: #4cae4c;
+}
+
+#cancel-edit-btn {
+    display: inline-block;
+    padding: 12px 20px;
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    margin-left: 10px;
+}
+
+#cancel-edit-btn:hover {
+    background-color: #c0392b;
+}
+
+/* ======================== */
+/* FILTROS */
+/* ======================== */
 .filters {
     display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
     flex-wrap: wrap;
-}
-
-.filter-group {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.filter-group select, 
-.filter-group input {
-    padding: 0.5rem;
-    border-radius: 4px;
-    border: 1px solid var(--border-color);
-}
-
-.filter-group input[type="date"] {
-    max-width: 150px;
-}
-
-.table-container {
-    overflow-x: auto;
-    margin-top: 1rem;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f9f9f9;
     border-radius: 8px;
-    border: 1px solid var(--border-color);
+    border: 1px solid #eee;
+    align-items: center;
 }
 
-#tasks-table {
+.filters label {
+    font-weight: bold;
+    color: #555;
+    margin-right: 5px;
+}
+
+.filters select,
+.filters input[type="date"] {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 0.95rem;
+    background-color: #fff;
+}
+
+#reset-filters-btn {
+    background-color: #95a5a6;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    font-size: 0.95rem;
+    margin-left: auto;
+}
+
+#reset-filters-btn:hover {
+    background-color: #7f8c8d;
+}
+
+/* ======================== */
+/* TABELA DE TAREFAS */
+/* ======================== */
+.task-list-container {
+    overflow-x: auto;
+    margin-top: 15px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+table {
     width: 100%;
     border-collapse: collapse;
-    table-layout: fixed;
 }
 
-#tasks-table th, #tasks-table td {
+table th {
+    background-color: #4a90e2;
+    color: white;
     padding: 12px 15px;
     text-align: left;
-    border-bottom: 1px solid var(--border-color);
-}
-
-#tasks-table th {
-    background: var(--primary);
-    color: white;
-    position: sticky;
-    top: 0;
-}
-
-#tasks-table tr:hover {
-    background-color: rgba(102, 126, 234, 0.05);
-}
-
-/* Larguras das Colunas */
-#tasks-table th:nth-child(1), #tasks-table td:nth-child(1) { width: 25%; }
-#tasks-table th:nth-child(2), #tasks-table td:nth-child(2) { width: 12%; }
-#tasks-table th:nth-child(3), #tasks-table td:nth-child(3) { width: 15%; }
-#tasks-table th:nth-child(4), #tasks-table td:nth-child(4) { width: 15%; }
-#tasks-table th:nth-child(5), #tasks-table td:nth-child(5) { width: 10%; }
-#tasks-table th:nth-child(6), #tasks-table td:nth-child(6) { width: 10%; }
-#tasks-table th:nth-child(7), #tasks-table td:nth-child(7) { width: 13%; }
-
-/* Status e Ações */
-.status {
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.8rem;
-    letter-spacing: 0.5px;
-    padding: 5px 10px;
-    border-radius: 12px;
-    text-align: center;
-    display: inline-block;
-    min-width: 100px;
-}
-
-.status-Não-Iniciado { background: #FFEEBA; color: #8A6D3B; }
-.status-Em-Andamento { background: #B8DAFF; color: #004085; }
-.status-Concluído { background: #C3E6CB; color: #155724; }
-
-.urgent {
-    color: var(--danger);
     font-weight: bold;
 }
 
-.task-actions {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-    justify-content: center;
+table td {
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
 }
 
-.btn-edit, .btn-delete {
+table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+table tr:hover {
+    background-color: #eef7ff;
+}
+
+/* ======================== */
+/* COMPONENTES DE TAREFAS */
+/* ======================== */
+/* Badge de identificação do dono */
+.owner-badge {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    margin-left: 8px;
+    display: inline-block;
+}
+
+/* Status das tarefas */
+.status {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.85em;
+    text-align: center;
+    min-width: 110px;
+}
+
+.status-Não-Iniciado {
+    background: #FFF3CD;
+    color: #856404;
+}
+
+.status-Em-Andamento {
+    background: #D1ECF1;
+    color: #0C5460;
+}
+
+.status-Pendente {
+    background: #F8D7DA;
+    color: #721C24;
+}
+
+.status-Concluído {
+    background: #D4EDDA;
+    color: #155724;
+}
+
+/* Botões de ação */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.action-buttons button {
     background: none;
     border: none;
-    cursor: pointer;
-    padding: 0.25rem;
-    transition: all 0.2s;
+    font-size: 1.1em;
+    padding: 5px;
+    transition: transform 0.2s;
 }
 
-.btn-edit {
-    color: var(--primary);
+.action-buttons .edit-btn {
+    color: #007bff;
 }
 
-.btn-delete {
-    color: var(--danger);
+.action-buttons .delete-btn {
+    color: #dc3545;
 }
 
-.btn-edit:hover {
-    color: var(--primary-dark);
+.action-buttons button:hover:not(:disabled) {
     transform: scale(1.1);
 }
 
-.btn-delete:hover {
-    color: #c82333;
-    transform: scale(1.1);
+.action-buttons button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
 }
 
-/* Dashboard Cards */
-.dashboard-card {
-    background: white;
-    border-radius: 10px;
-    padding: 1.5rem;
-    box-shadow
+/* ======================== */
+/* MENSAGENS E FEEDBACK */
+/* ======================== */
+.error-message {
+    color: #dc3545;
+    font-size: 0.9em;
+    margin-top: 10px;
+}
+
+.flash-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    border-radius: 5px;
+    color: white;
+    font-weight: bold;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease-out;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+.flash-success {
+    background-color: #28a745;
+}
+
+.flash-error {
+    background-color: #dc3545;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ======================== */
+/* RODAPÉ */
+/* ======================== */
+footer {
+    text-align: center;
+    padding: 20px 0;
+    margin-top: 30px;
+    color: #777;
+    font-size: 0.9rem;
+    border-top: 1px solid #eee;
+}
+
+/* ======================== */
+/* RESPONSIVIDADE */
+/* ======================== */
+@media (max-width: 768px) {
+    .filters {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    #reset-filters-btn {
+        margin-left: 0;
+        width: 100%;
+    }
+    
+    .auth-forms-wrapper {
+        grid-template-columns: 1fr;
+    }
+    
+    button[type="submit"],
+    #cancel-edit-btn {
+        width: 100%;
+        margin-left: 0;
+    }
+    
+    table td, table th {
+        padding: 8px 10px;
+        font-size: 0.9em;
+    }
+}
