@@ -514,47 +514,85 @@ function setupAuth() {
     }
 
     // Listener de estado de autenticação
-    onAuthStateChanged(auth, (user) => {
-        currentUser = user;
 
+    function setupAuth() {
+    // ... (mantenha o código existente de alternância entre telas)
+
+    // Corrija o listener de estado de autenticação
+    onAuthStateChanged(auth, (user) => {
+        console.log("[DEBUG] Estado de autenticação:", user); // Log para debug
+        
+        currentUser = user;
         if (user) {
-            // Atualizar UI
+            console.log("[DEBUG] Usuário logado:", user.email);
             ui.userEmailDisplay.textContent = user.email;
             ui.loggedInView.style.display = 'flex';
             ui.loggedOutView.style.display = 'none';
             ui.mainGrid.style.display = 'grid';
             ui.authSection.style.display = 'none';
-
-            // Carregar dados
-            loadAssignees();
-            setupTasksListener();
-
+            
+            // Carregue os dados apenas se for a primeira vez
+            if (!unsubscribeCallbacks.tasks) {
+                loadAssignees();
+                setupTasksListener();
+            }
         } else {
-            // Resetar UI
+            console.log("[DEBUG] Nenhum usuário logado");
             ui.loggedInView.style.display = 'none';
             ui.loggedOutView.style.display = 'block';
             ui.mainGrid.style.display = 'none';
             ui.authSection.style.display = 'block';
-            if (ui.tasksGrid) ui.tasksGrid.innerHTML = '';
+            
+            // Limpe os listeners ao deslogar
+            if (unsubscribeCallbacks.tasks) {
+                unsubscribeCallbacks.tasks();
+                unsubscribeCallbacks.tasks = null;
+            }
         }
     });
 
-    // Login
+    // Corrija o formulário de login
     if (ui.loginForm) {
         ui.loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const email = ui.loginForm.querySelector('#login-email').value;
+            const password = ui.loginForm.querySelector('#login-password').value;
+            
             try {
-                await signInWithEmailAndPassword(
-                    auth,
-                    ui.loginForm.querySelector('#login-email').value,
-                    ui.loginForm.querySelector('#login-password').value
-                );
+                // Mostre um feedback visual
+                const submitBtn = ui.loginForm.querySelector('button[type="submit"]');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...';
+                
+                await signInWithEmailAndPassword(auth, email, password);
             } catch (error) {
-                helpers.showMessage('Login falhou: ' + error.message, true);
+                console.error("[ERRO] Falha no login:", error);
+                let errorMsg = "Erro ao fazer login: ";
+                switch(error.code) {
+                    case 'auth/invalid-email':
+                        errorMsg += "E-mail inválido";
+                        break;
+                    case 'auth/user-not-found':
+                    case 'auth/wrong-password':
+                        errorMsg += "E-mail ou senha incorretos";
+                        break;
+                    default:
+                        errorMsg += error.message;
+                }
+                helpers.showMessage(errorMsg, true);
+            } finally {
+                if (ui.loginForm) {
+                    const submitBtn = ui.loginForm.querySelector('button[type="submit"]');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Entrar';
+                }
             }
         });
     }
-
+    
+    // ... (mantenha o restante do código existente)
+}
+    
     // Cadastro
     if (ui.signupForm) {
         ui.signupForm.addEventListener('submit', async (e) => {
