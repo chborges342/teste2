@@ -98,33 +98,63 @@ const helpers = {
 
 // Renderização de tarefas
 function renderTask(task) {
-    if (!ui.tasksTableBody) return;
-
-    const row = document.createElement('tr');
-    row.dataset.id = task.id;
+    const tasksGrid = document.getElementById('tasks-grid');
+    if (!tasksGrid) return;
 
     const deadline = helpers.formatDate(task.deadline);
     const isUrgent = deadline && (deadline - new Date()) < 3 * 24 * 60 * 60 * 1000;
+    const assigneeInitial = task.assignee ? task.assignee.charAt(0).toUpperCase() : '?';
 
-    row.innerHTML = `
-        <td>${helpers.escapeHtml(task.description)}</td>
-        <td>${helpers.escapeHtml(task.type)}</td>
-        <td>${helpers.escapeHtml(task.seiProcess || '-')}</td>
-        <td>${helpers.escapeHtml(task.assignee)}</td>
-        <td class="${isUrgent ? 'urgent' : ''}">
-            ${deadline ? deadline.toLocaleDateString('pt-BR') : '-'}
-        </td>
-        <td>
-            <span class="status ${task.status.replace(/\s/g, '-')}">${task.status}</span>
-            <div class="task-actions">
-                <button class="btn-edit" data-id="${task.id}"><i class="fas fa-edit"></i></button>
-                <button class="btn-delete" data-id="${task.id}"><i class="fas fa-trash"></i></button>
+    const taskCard = document.createElement('div');
+    taskCard.className = `task-card status-${task.status.replace(/\s/g, '-')} priority-${task.priority || 'Média'}`;
+    taskCard.dataset.id = task.id;
+    taskCard.dataset.status = task.status;
+    taskCard.dataset.priority = task.priority;
+    taskCard.dataset.assignee = task.assignee;
+
+    taskCard.innerHTML = `
+        <div class="task-card-header">
+            <span class="task-type-badge">${task.type || 'Geral'}</span>
+            <span class="task-deadline ${isUrgent ? 'urgent' : ''}">
+                <i class="far fa-calendar-alt"></i>
+                ${deadline ? deadline.toLocaleDateString('pt-BR') : 'Sem prazo'}
+            </span>
+        </div>
+        
+        <div class="task-card-body">
+            <h3 class="task-title">${task.description || 'Nova Tarefa'}</h3>
+            <p class="task-description">${task.observations || 'Nenhuma observação cadastrada'}</p>
+            
+            ${task.seiProcess ? `
+                <div class="task-sei-process">
+                    <i class="fas fa-file-alt"></i>
+                    Processo SEI: ${task.seiProcess}
+                </div>
+            ` : ''}
+        </div>
+        
+        <div class="task-card-footer">
+            <div class="task-assignee">
+                <span class="assignee-avatar">${assigneeInitial}</span>
+                <span class="assignee-name">${task.assignee || 'Não atribuído'}</span>
             </div>
-        </td>
-        <td>${helpers.escapeHtml(task.observations || '')}</td>
+            
+            <span class="task-status status-${task.status.replace(/\s/g, '-')}">
+                ${task.status}
+            </span>
+            
+            <div class="task-actions">
+                <button class="btn-edit" data-id="${task.id}" title="Editar">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn-delete" data-id="${task.id}" title="Excluir">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
     `;
 
-    ui.tasksTableBody.appendChild(row);
+    tasksGrid.appendChild(taskCard);
 }
 
 // Carregar colaboradores
