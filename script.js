@@ -19,6 +19,8 @@ import {
     getAuth, createUserWithEmailAndPassword, 
     signInWithEmailAndPassword, signOut, onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
+import { Timestamp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore.js";
+
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -116,10 +118,13 @@ const helpers = {
 
 // Renderização de tarefas
 function renderTask(task) {
-    const deadline = helpers.formatDate(task.deadline);
-    const isUrgent = deadline && (deadline - new Date()) < 3 * 24 * 60 * 60 * 1000;
-    const assigneeInitial = task.assignee ? task.assignee.charAt(0).toUpperCase() : '?';
-
+    // Converter timestamp do Firestore para Date se necessário
+    const deadline = task.deadline instanceof Timestamp 
+        ? task.deadline.toDate() 
+        : helpers.formatDate(task.deadline);
+    
+    // Restante da função permanece igual...
+}
     const taskCard = document.createElement('div');
     taskCard.className = `task-card status-${task.status.replace(/\s/g, '-')} priority-${task.priority || 'Média'} ${isUrgent ? 'urgent' : ''}`;
     taskCard.dataset.id = task.id;
