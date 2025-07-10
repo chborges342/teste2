@@ -43,7 +43,7 @@ const ui = {
     // Tarefas
     mainGrid: document.querySelector('.main-grid'),
     taskForm: document.getElementById('task-form'),
-    tasksTableBody: document.getElementById('tasks-table-body'),
+    tasksGrid: document.getElementById('tasks-grid'),
     cancelEditBtn: document.getElementById('cancel-edit-btn'),
     taskAssigneeSelect: document.getElementById('task-assignee'),
 
@@ -96,10 +96,9 @@ const helpers = {
     }
 };
 
-// Renderização de tarefas
+// Renderização de tarefas como cards
 function renderTask(task) {
-    const tasksGrid = document.getElementById('tasks-grid');
-    if (!tasksGrid) return;
+    if (!ui.tasksGrid) return;
 
     const deadline = helpers.formatDate(task.deadline);
     const isUrgent = deadline && (deadline - new Date()) < 3 * 24 * 60 * 60 * 1000;
@@ -122,13 +121,13 @@ function renderTask(task) {
         </div>
         
         <div class="task-card-body">
-            <h3 class="task-title">${task.description || 'Nova Tarefa'}</h3>
-            <p class="task-description">${task.observations || 'Nenhuma observação cadastrada'}</p>
+            <h3 class="task-title">${helpers.escapeHtml(task.description) || 'Nova Tarefa'}</h3>
+            <p class="task-description">${helpers.escapeHtml(task.observations) || 'Nenhuma observação cadastrada'}</p>
             
             ${task.seiProcess ? `
                 <div class="task-sei-process">
                     <i class="fas fa-file-alt"></i>
-                    Processo SEI: ${task.seiProcess}
+                    Processo SEI: ${helpers.escapeHtml(task.seiProcess)}
                 </div>
             ` : ''}
         </div>
@@ -136,7 +135,7 @@ function renderTask(task) {
         <div class="task-card-footer">
             <div class="task-assignee">
                 <span class="assignee-avatar">${assigneeInitial}</span>
-                <span class="assignee-name">${task.assignee || 'Não atribuído'}</span>
+                <span class="assignee-name">${helpers.escapeHtml(task.assignee) || 'Não atribuído'}</span>
             </div>
             
             <span class="task-status status-${task.status.replace(/\s/g, '-')}">
@@ -154,7 +153,7 @@ function renderTask(task) {
         </div>
     `;
 
-    tasksGrid.appendChild(taskCard);
+    ui.tasksGrid.appendChild(taskCard);
 }
 
 // Carregar colaboradores
@@ -170,15 +169,10 @@ async function loadAssignees() {
 
         snapshot.forEach(doc => {
             const collaborator = doc.data();
-            
-            // Verificação robusta do nome
-            const displayName = collaborator.nome || 
-                              collaborator.displayName || 
-                              collaborator.nomeCompleto || 
-                              'Colaborador sem nome';
+            const displayName = collaborator.nome || collaborator.email || 'Colaborador';
             
             const option = document.createElement('option');
-            option.value = doc.id; // Usando o ID do documento
+            option.value = doc.id;
             option.textContent = displayName;
             
             ui.taskAssigneeSelect.appendChild(option);
@@ -231,32 +225,36 @@ function setupTasksListener() {
 
     let q = query(collection(db, "tarefas"), orderBy("createdAt", "desc"));
 
-    // Filtro por status
+    // Aplicar filtros
     const statusFilter = ui.filterStatusSelect?.value;
+    const assigneeFilter = document.getElementById('filter-assignee')?.value;
+    const startDate = document.getElementById('filter-start-date')?.value;
+    const endDate = document.getElementById('filter-end-date')?.value;
+
     if (statusFilter && statusFilter !== "all") {
         q = query(q, where("status", "==", statusFilter));
     }
 
-    // Filtro por colaborador
-    const assigneeFilter = document.getElementById('filter-assignee')?.value;
     if (assigneeFilter && assigneeFilter !== "all") {
         q = query(q, where("assignee", "==", assigneeFilter));
     }
 
-    // Filtro por data
-    const startDate = document.getElementById('filter-start-date')?.value;
-    const endDate = document.getElementById('filter-end-date')?.value;
-    
     if (startDate) {
         q = query(q, where("deadline", ">=", new Date(startDate)));
     }
+
     if (endDate) {
         q = query(q, where("deadline", "<=", new Date(endDate)));
     }
 
     unsubscribeCallbacks.tasks = onSnapshot(q, (snapshot) => {
-        ui.tasksTableBody.innerHTML = '';
+        if (ui.tasksGrid) ui.tasksGrid.innerHTML = '';
         
+        const noTasksMsg = document.getElementById('no-tasks-message');
+        if (noTasksMsg) {
+            noTasksMsg.style.display = snapshot.empty ? 'block' : 'none';
+        }
+
         snapshot.forEach(doc => {
             const data = doc.data();
             renderTask({
@@ -268,11 +266,49 @@ function setupTasksListener() {
                 deadline: data.deadline,
                 observations: data.observations || '',
                 status: data.status || 'Não Iniciado',
+                priority: data.priority || 'Média',
                 userId: data.userId
             });
         });
 
         updateDashboard();
+    });
+}
+
+// Configurar filtros por chips
+function setupChipFilters() {
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.addEventListener('click', function() {
+            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+            
+            const [key, value] = this.dataset.filter.includes(':') 
+                ? this.dataset.filter.split(':') 
+                : ['all', ''];
+            
+            if (key === 'all') {
+                setupTasksListener();
+            } else {
+                // Aplica filtro adicional
+                let q = query(
+                    collection(db, "tarefas"), 
+                    where(key, "==", value),
+                    orderBy("createdAt", "desc")
+                );
+                
+                if (unsubscribeCallbacks.tasks) unsubscribeCallbacks.tasks();
+                unsubscribeCallbacks.tasks = onSnapshot(q, snapshot => {
+                    if (ui.tasksGrid) ui.tasksGrid.innerHTML = '';
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        renderTask({
+                            id: doc.id,
+                            ...data
+                        });
+                    });
+                });
+            }
+        });
     });
 }
 
@@ -292,7 +328,7 @@ async function editTask(taskId) {
             document.getElementById('task-sei-process').value = task.seiProcess || '';
             document.getElementById('task-assignee').value = task.assignee || '';
             
-            // Formatar data corretamente
+            // Formatar data
             const deadlineDate = task.deadline?.toDate();
             if (deadlineDate) {
                 document.getElementById('task-deadline').value = deadlineDate.toISOString().split('T')[0];
@@ -302,7 +338,7 @@ async function editTask(taskId) {
             document.getElementById('task-priority').value = task.priority;
             document.getElementById('task-observations').value = task.observations || '';
 
-            // Rolagem suave
+            // Rolagem suave para o formulário
             document.querySelector('.cadastro-container').scrollIntoView({ behavior: 'smooth' });
         }
     } catch (error) {
@@ -337,43 +373,47 @@ function setupTaskActions() {
 
 // Formulário de tarefas
 function setupTaskForm() {
-    ui.taskForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        try {
-            const taskData = {
-                description: document.getElementById('task-description').value,
-                type: document.getElementById('task-type').value,
-                seiProcess: document.getElementById('task-sei-process').value,
-                assignee: document.getElementById('task-assignee').value,
-                deadline: new Date(document.getElementById('task-deadline').value),
-                status: document.getElementById('task-status').value,
-                priority: document.getElementById('task-priority').value,
-                observations: document.getElementById('task-observations').value,
-                userId: currentUser.uid,
-                createdAt: new Date()
-            };
+    if (ui.taskForm) {
+        ui.taskForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            try {
+                const taskData = {
+                    description: document.getElementById('task-description').value,
+                    type: document.getElementById('task-type').value,
+                    seiProcess: document.getElementById('task-sei-process').value,
+                    assignee: document.getElementById('task-assignee').value,
+                    deadline: new Date(document.getElementById('task-deadline').value),
+                    status: document.getElementById('task-status').value,
+                    priority: document.getElementById('task-priority').value,
+                    observations: document.getElementById('task-observations').value,
+                    userId: currentUser.uid,
+                    createdAt: new Date()
+                };
 
-            if (editTaskId) {
-                await updateDoc(doc(db, "tarefas", editTaskId), taskData);
-                helpers.showMessage("Tarefa atualizada!");
-            } else {
-                await addDoc(collection(db, "tarefas"), taskData);
-                helpers.showMessage("Tarefa criada!");
+                if (editTaskId) {
+                    await updateDoc(doc(db, "tarefas", editTaskId), taskData);
+                    helpers.showMessage("Tarefa atualizada!");
+                } else {
+                    await addDoc(collection(db, "tarefas"), taskData);
+                    helpers.showMessage("Tarefa criada!");
+                }
+
+                ui.taskForm.reset();
+                editTaskId = null;
+            } catch (error) {
+                console.error("Erro ao salvar tarefa:", error);
+                helpers.showMessage("Erro ao salvar tarefa: " + error.message, true);
             }
+        });
+    }
 
+    if (ui.cancelEditBtn) {
+        ui.cancelEditBtn.addEventListener('click', () => {
             ui.taskForm.reset();
             editTaskId = null;
-        } catch (error) {
-            console.error("Erro ao salvar tarefa:", error);
-            helpers.showMessage("Erro ao salvar tarefa: " + error.message, true);
-        }
-    });
-
-    ui.cancelEditBtn.addEventListener('click', () => {
-        ui.taskForm.reset();
-        editTaskId = null;
-    });
+        });
+    }
 }
 
 // Autenticação
@@ -429,42 +469,46 @@ function setupAuth() {
             ui.loggedOutView.style.display = 'block';
             ui.mainGrid.style.display = 'none';
             ui.authSection.style.display = 'block';
-            if (ui.tasksTableBody) {
-                ui.tasksTableBody.innerHTML = '<tr><td colspan="7">Faça login para ver tarefas</td></tr>';
-            }
+            if (ui.tasksGrid) ui.tasksGrid.innerHTML = '';
         }
     });
 
     // Login
-    ui.loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        try {
-            await signInWithEmailAndPassword(
-                auth,
-                ui.loginForm.querySelector('#login-email').value,
-                ui.loginForm.querySelector('#login-password').value
-            );
-        } catch (error) {
-            helpers.showMessage('Login falhou: ' + error.message, true);
-        }
-    });
+    if (ui.loginForm) {
+        ui.loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await signInWithEmailAndPassword(
+                    auth,
+                    ui.loginForm.querySelector('#login-email').value,
+                    ui.loginForm.querySelector('#login-password').value
+                );
+            } catch (error) {
+                helpers.showMessage('Login falhou: ' + error.message, true);
+            }
+        });
+    }
 
     // Cadastro
-    ui.signupForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        try {
-            await createUserWithEmailAndPassword(
-                auth,
-                ui.signupForm.querySelector('#signup-email').value,
-                ui.signupForm.querySelector('#signup-password').value
-            );
-        } catch (error) {
-            helpers.showMessage('Cadastro falhou: ' + error.message, true);
-        }
-    });
+    if (ui.signupForm) {
+        ui.signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await createUserWithEmailAndPassword(
+                    auth,
+                    ui.signupForm.querySelector('#signup-email').value,
+                    ui.signupForm.querySelector('#signup-password').value
+                );
+            } catch (error) {
+                helpers.showMessage('Cadastro falhou: ' + error.message, true);
+            }
+        });
+    }
 
     // Logout
-    ui.logoutButton.addEventListener('click', () => signOut(auth));
+    if (ui.logoutButton) {
+        ui.logoutButton.addEventListener('click', () => signOut(auth));
+    }
 }
 
 // Filtros
@@ -505,4 +549,5 @@ document.addEventListener('DOMContentLoaded', () => {
     setupTaskForm();
     setupTaskActions();
     setupFilters();
+    setupChipFilters();
 });
