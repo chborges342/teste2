@@ -225,26 +225,35 @@ function setupTasksListener() {
 
     let q = query(collection(db, "tarefas"), orderBy("createdAt", "desc"));
 
-    // Aplicar filtros
+    // Filtro por status
     const statusFilter = ui.filterStatusSelect?.value;
-    const assigneeFilter = document.getElementById('filter-assignee')?.value;
-    const startDate = document.getElementById('filter-start-date')?.value;
-    const endDate = document.getElementById('filter-end-date')?.value;
-
     if (statusFilter && statusFilter !== "all") {
         q = query(q, where("status", "==", statusFilter));
     }
 
+    // Filtro por colaborador
+    const assigneeFilter = document.getElementById('filter-assignee')?.value;
     if (assigneeFilter && assigneeFilter !== "all") {
         q = query(q, where("assignee", "==", assigneeFilter));
     }
 
-    if (startDate) {
+    // Filtro por intervalo de tempo (CORRIGIDO)
+    const startDate = document.getElementById('filter-start-date')?.value;
+    const endDate = document.getElementById('filter-end-date')?.value;
+    
+    if (startDate && endDate) {
+        // Quando ambas as datas estão preenchidas
+        q = query(
+            q,
+            where("deadline", ">=", new Date(startDate)),
+            where("deadline", "<=", new Date(endDate + "T23:59:59")) // Inclui todo o dia final
+        );
+    } else if (startDate) {
+        // Apenas data inicial
         q = query(q, where("deadline", ">=", new Date(startDate)));
-    }
-
-    if (endDate) {
-        q = query(q, where("deadline", "<=", new Date(endDate)));
+    } else if (endDate) {
+        // Apenas data final
+        q = query(q, where("deadline", "<=", new Date(endDate + "T23:59:59")));
     }
 
     unsubscribeCallbacks.tasks = onSnapshot(q, (snapshot) => {
