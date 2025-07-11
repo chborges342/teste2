@@ -635,25 +635,32 @@ function setupFilters() {
 }
 
 // Inicialização
-document.addEventListener('DOMContentLoaded', () => {
-    setupAuth();
-    setupTaskForm();
-    setupTaskActions();
-    setupFilters();
-    setupChipFilters();
-    setupQuickFilters();
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log("DOM carregado, iniciando app...");
     
-    // Configura data mínima para os inputs de data
-    const today = new Date().toISOString().split('T')[0];
-    if (ui.filterStartDate) ui.filterStartDate.min = "2000-01-01";
-    if (ui.filterEndDate) ui.filterEndDate.min = "2000-01-01";
-});
+    try {
+        // Teste de conexão com Firebase
+        console.log("Testando conexão com Firebase...");
+        await getDocs(collection(db, "nonexistent")); // Teste simples
+        
+        const authUnsubscribe = setupAuth();
+        
+        setupTaskForm();
+        setupTaskActions();
+        setupFilters();
+        setupChipFilters();
+        setupQuickFilters();
 
-// DEBUG: Teste de inicialização
-console.log("Firebase inicializado:", app);
-console.log("Auth configurado:", auth);
-
-// Teste manual do listener
-onAuthStateChanged(auth, (user) => {
-    console.log("[TESTE] Listener de auth disparado:", user);
+        console.log("Aplicação inicializada com sucesso!");
+        
+        // Limpeza ao sair
+        window.addEventListener('beforeunload', () => {
+            authUnsubscribe();
+            if (unsubscribeCallbacks.tasks) unsubscribeCallbacks.tasks();
+        });
+        
+    } catch (error) {
+        console.error("FALHA NA INICIALIZAÇÃO:", error);
+        helpers.showMessage("Erro ao conectar com o servidor. Recarregue a página.", true);
+    }
 });
