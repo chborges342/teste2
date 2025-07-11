@@ -484,136 +484,111 @@ function setupTaskForm() {
 
 // Autenticação
 function setupAuth() {
-    // Alternar entre login/cadastro
-    if (ui.showLoginBtn) {
-        ui.showLoginBtn.addEventListener('click', () => {
-            ui.loggedOutView.style.display = 'none';
-            ui.loginForm.style.display = 'block';
-        });
+    // Debug inicial
+    console.log("Iniciando configuração de autenticação...");
+    console.log("Auth object:", auth);
+
+    // Verifique se os elementos UI existem
+    if (!ui.loginForm || !ui.signupForm) {
+        console.error("Elementos do formulário não encontrados!");
+        return;
     }
 
-    if (ui.cancelLoginBtn) {
-        ui.cancelLoginBtn.addEventListener('click', () => {
-            ui.loginForm.style.display = 'none';
-            ui.loggedOutView.style.display = 'block';
-        });
-    }
-
-    if (ui.showSignupBtn) {
-        ui.showSignupBtn.addEventListener('click', () => {
-            ui.loggedOutView.style.display = 'none';
-            ui.signupForm.style.display = 'block';
-        });
-    }
-
-    if (ui.cancelSignupBtn) {
-        ui.cancelSignupBtn.addEventListener('click', () => {
-            ui.signupForm.style.display = 'none';
-            ui.loggedOutView.style.display = 'block';
-        });
-    }
-
-    // Listener de estado de autenticação
-
-    function setupAuth() {
-    // ... (mantenha o código existente de alternância entre telas)
-
-    // Corrija o listener de estado de autenticação
-    onAuthStateChanged(auth, (user) => {
-        console.log("[DEBUG] Estado de autenticação:", user); // Log para debug
+    // Listener de estado de autenticação (CORRIGIDO)
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+        console.log("Estado de autenticação alterado:", user);
         
-        currentUser = user;
         if (user) {
-            console.log("[DEBUG] Usuário logado:", user.email);
+            console.log("Usuário logado:", user.email);
+            currentUser = user;
+            
+            // Atualize a UI
             ui.userEmailDisplay.textContent = user.email;
             ui.loggedInView.style.display = 'flex';
             ui.loggedOutView.style.display = 'none';
             ui.mainGrid.style.display = 'grid';
             ui.authSection.style.display = 'none';
             
-            // Carregue os dados apenas se for a primeira vez
-            if (!unsubscribeCallbacks.tasks) {
-                loadAssignees();
-                setupTasksListener();
-            }
+            // Carregue dados
+            loadAssignees();
+            setupTasksListener();
         } else {
-            console.log("[DEBUG] Nenhum usuário logado");
+            console.log("Nenhum usuário logado");
+            currentUser = null;
             ui.loggedInView.style.display = 'none';
             ui.loggedOutView.style.display = 'block';
             ui.mainGrid.style.display = 'none';
             ui.authSection.style.display = 'block';
-            
-            // Limpe os listeners ao deslogar
-            if (unsubscribeCallbacks.tasks) {
-                unsubscribeCallbacks.tasks();
-                unsubscribeCallbacks.tasks = null;
-            }
         }
     });
 
-    // Corrija o formulário de login
-    if (ui.loginForm) {
-        ui.loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = ui.loginForm.querySelector('#login-email').value;
-            const password = ui.loginForm.querySelector('#login-password').value;
+    // Formulário de Login (CORRIGIDO)
+    ui.loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = ui.loginForm.querySelector('#login-email').value;
+        const password = ui.loginForm.querySelector('#login-password').value;
+
+        console.log("Tentando login com:", email);
+        
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            console.log("Login bem-sucedido:", userCredential.user);
+        } catch (error) {
+            console.error("Erro de login:", error.code, error.message);
+            let errorMsg = "Erro no login: ";
             
-            try {
-                // Mostre um feedback visual
-                const submitBtn = ui.loginForm.querySelector('button[type="submit"]');
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...';
-                
-                await signInWithEmailAndPassword(auth, email, password);
-            } catch (error) {
-                console.error("[ERRO] Falha no login:", error);
-                let errorMsg = "Erro ao fazer login: ";
-                switch(error.code) {
-                    case 'auth/invalid-email':
-                        errorMsg += "E-mail inválido";
-                        break;
-                    case 'auth/user-not-found':
-                    case 'auth/wrong-password':
-                        errorMsg += "E-mail ou senha incorretos";
-                        break;
-                    default:
-                        errorMsg += error.message;
-                }
-                helpers.showMessage(errorMsg, true);
-            } finally {
-                if (ui.loginForm) {
-                    const submitBtn = ui.loginForm.querySelector('button[type="submit"]');
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Entrar';
-                }
+            switch(error.code) {
+                case 'auth/invalid-email':
+                    errorMsg += "E-mail inválido";
+                    break;
+                case 'auth/user-disabled':
+                    errorMsg += "Conta desativada";
+                    break;
+                case 'auth/user-not-found':
+                case 'auth/wrong-password':
+                    errorMsg += "E-mail ou senha incorretos";
+                    break;
+                default:
+                    errorMsg += error.message;
             }
-        });
-    }
-    
-    // ... (mantenha o restante do código existente)
-}
-    
-    // Cadastro
-    if (ui.signupForm) {
-        ui.signupForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+            
+            helpers.showMessage(errorMsg, true);
+        }
+    });
+
+    // Formulário de Cadastro (similar ao login)
+    ui.signupForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = ui.signupForm.querySelector('#signup-email').value;
+        const password = ui.signupForm.querySelector('#signup-password').value;
+
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            console.log("Usuário criado:", userCredential.user);
+            helpers.showMessage("Cadastro realizado com sucesso!");
+        } catch (error) {
+            console.error("Erro no cadastro:", error.code, error.message);
+            helpers.showMessage("Erro no cadastro: " + error.message, true);
+        }
+    });
+
+    // Logout
+    if (ui.logoutButton) {
+        ui.logoutButton.addEventListener('click', async () => {
             try {
-                await createUserWithEmailAndPassword(
-                    auth,
-                    ui.signupForm.querySelector('#signup-email').value,
-                    ui.signupForm.querySelector('#signup-password').value
-                );
+                await signOut(auth);
+                helpers.showMessage("Logout realizado com sucesso!");
             } catch (error) {
-                helpers.showMessage('Cadastro falhou: ' + error.message, true);
+                console.error("Erro no logout:", error);
+                helpers.showMessage("Erro ao sair: " + error.message, true);
             }
         });
     }
 
-    // Logout
-    if (ui.logoutButton) {
-        ui.logoutButton.addEventListener('click', () => signOut(auth));
-    }
+    // Retorne a função de unsubscribe para limpeza
+    return unsubscribe;
 }
+
 
 // Filtros
 function setupFilters() {
